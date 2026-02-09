@@ -96,19 +96,27 @@
 
         /* Workout choice cards follow theme */
         .choice {
-            flex: 1;
-            padding: 12px;
-            border-radius: 6px;
+            flex: none;
+            padding: 8px 12px;
+            border-radius: 4px;
             text-align: center;
             cursor: pointer;
             background: var(--choice-bg);
             color: var(--choice-text);
             border: 1px solid var(--choice-border);
             transition: background 0.2s, border-color 0.2s;
-            min-height: 80px;
+            min-height: unset;
+            display: block;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Stack choices vertically */
+        .choices {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         .choice:hover { background: color-mix(in srgb, var(--choice-bg) 85%, #000 15%); }
@@ -125,6 +133,12 @@
 
         .week-btn:hover, .day-btn:hover, .exercise-btn:hover {
             opacity: 0.9;
+        }
+
+        /* Highlight for completed exercises */
+        .exercise-btn.completed {
+            background: color-mix(in srgb, var(--button-bg) 12%, var(--container-bg) 88%);
+            border-color: var(--button-bg);
         }
 
         .exercise-detail {
@@ -350,7 +364,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr v0.2</div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.3</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -383,7 +397,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="forceUpdate()">Update</button>
         </div>
-        <div class="menu-version">v0.2</div>
+        <div class="menu-version" id="menu-version">v0.3</div>
     </div>
     
     <div class="container">
@@ -392,18 +406,15 @@
             <h1>Workout Planner</h1>
             <div class="small" style="margin-bottom:12px">Choose your focus below to get a simple starter plan.</div>
 
-            <div class="choices" role="tablist" style="display:flex;gap:12px;margin-bottom:12px">
+            <div class="choices" role="tablist">
                 <div class="choice" id="power" role="tab" tabindex="0" onclick="selectProgram('power')">
                     <strong>Powerlifting</strong>
-                    <div class="small">Strength: squat, bench, deadlift</div>
                 </div>
                 <div class="choice" id="body" role="tab" tabindex="0" onclick="selectProgram('body')">
                     <strong>Bodybuilding</strong>
-                    <div class="small">Hypertrophy: splits & volume</div>
                 </div>
                 <div class="choice" id="general" role="tab" tabindex="0" onclick="selectProgram('general')">
                     <strong>General Health</strong>
-                    <div class="small">Balanced: cardio & mobility</div>
                 </div>
             </div>
 
@@ -1278,6 +1289,8 @@
             let workoutWeights = {};
             // Track which exercise detail panels are expanded: entries like "program:week:day:exIdx"
             let expandedExercises = new Set();
+            // Track completed exercises (entries like "program:week:day:exIdx")
+            let completedExercises = new Set();
             
             // Load weights from localStorage
             function loadWorkoutWeights() {
@@ -1290,6 +1303,21 @@
             // Save weights to localStorage
             function saveWorkoutWeights() {
                 localStorage.setItem('workoutWeights', JSON.stringify(workoutWeights));
+            }
+
+            function loadCompletedExercises() {
+                try {
+                    const raw = localStorage.getItem('completedExercises');
+                    if (!raw) return;
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) completedExercises = new Set(arr);
+                } catch (e) { /* ignore */ }
+            }
+
+            function saveCompletedExercises() {
+                try {
+                    localStorage.setItem('completedExercises', JSON.stringify(Array.from(completedExercises)));
+                } catch (e) { /* ignore */ }
             }
             
             // Create a unique key for each exercise
@@ -1387,8 +1415,7 @@
                 }
                 
                 // Generate HTML for plate display
-                let html = `<div style="font-size:18px;font-weight:bold;margin-bottom:10px;color:var(--button-bg)">${originalWeight.toFixed(1)} ${displayUnit}</div>`;
-                html += '<div style="display:flex;justify-content:space-around;font-size:12px;margin-bottom:8px"><div>Total</div><div>Per Side</div></div>';
+                let html = '<div style="display:flex;justify-content:space-around;font-size:12px;margin-bottom:8px"><div>Total</div><div>Per Side</div></div>';
                 
                 weights.filter(item => item.total > 0).forEach(item => {
                     html += `<div style="display:flex;justify-content:space-around;margin-bottom:12px">`;
@@ -1485,6 +1512,9 @@
                 
                 saveWorkoutWeights();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
+                // Clear completed exercise marks when exporting week 4 to week 1
+                completedExercises.clear();
+                saveCompletedExercises();
                 
                 // Navigate to week 1
                 showWeek(key, 1);
@@ -1518,7 +1548,12 @@
                 
                 let html = `<div style="background:var(--choice-bg);padding:12px;border-radius:4px;margin:0 0 8px 0">`;
                 day.exercises.forEach((ex, exIdx) => {
-                    html += `<button onclick="showExercise(event, '${key}', ${weekNum}, ${dayIdx}, ${exIdx})" style="display:block;width:100%;padding:8px;margin:8px 0;background:var(--container-bg);color:var(--text-color);border:1px solid var(--choice-border);border-radius:4px;cursor:pointer;text-align:left" class="exercise-btn" data-exercise="${exIdx}">${ex.name}</button><div id="exercise-detail-${weekNum}-${dayIdx}-${exIdx}" style="display:none;margin:4px 0 4px 8px;padding:8px;background:var(--choice-bg);border-left:4px solid var(--button-bg);border-radius:4px;"></div>`;
+                    const btnId = `exercise-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`;
+                    const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                    const isDone = completedExercises.has(eid);
+                    const doneClass = isDone ? ' completed' : '';
+                    const doneStyle = isDone ? 'background: var(--button-bg); color: white; border-color: var(--button-bg);' : 'background: var(--container-bg); color: var(--text-color); border-color: var(--choice-border);';
+                    html += `<button id="${btnId}" onclick="showExercise(event, '${key}', ${weekNum}, ${dayIdx}, ${exIdx})" style="display:block;width:100%;padding:8px;margin:8px 0;${doneStyle}color:var(--text-color);border-radius:4px;cursor:pointer;text-align:left" class="exercise-btn${doneClass}" data-exercise="${exIdx}">${ex.name}</button><div id="exercise-detail-${weekNum}-${dayIdx}-${exIdx}" style="display:none;margin:4px 0 4px 8px;padding:8px;background:var(--choice-bg);border-left:4px solid var(--button-bg);border-radius:4px;"></div>`;
                 });
                 html += '</div>';
                 dayContentDiv.innerHTML = html;
@@ -1547,7 +1582,6 @@
                 // Collapse all other exercises in this day and remove them from expanded set
                 document.querySelectorAll(`[id^="exercise-detail-${weekNum}-${dayIdx}-"]`).forEach(div => {
                     if (div !== detailDiv) {
-                        // extract index from id
                         const match = div.id.match(/exercise-detail-(\d+)-(\d+)-(\d+)/);
                         if (match) {
                             const otherWeek = parseInt(match[1],10);
@@ -1564,28 +1598,36 @@
                 expandedExercises.add(eid);
                 saveAppState();
 
-                let html = `<strong>${ex.name}</strong><br>Sets: ${ex.sets} | Reps: ${ex.reps}<br><br>`;
+                // Header row with name/info and complete button (right-aligned)
+                const completed = completedExercises.has(eid);
+                let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
+                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${ex.reps}</div>`;
+                html += `<button onclick="toggleComplete('${key}', ${weekNum}, ${dayIdx}, ${exIdx})" id="complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}" style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completed? 'var(--button-bg)' : 'transparent'};color:${completed? 'white' : 'var(--text-color)'}">${completed? '✓ Completed' : 'Complete'}</button>`;
+                html += `</div>`;
                 
-                // Handle weight display and input
+                // Handle weight display and input — inline with label
                 if (weekNum === 1) {
-                    // Week 1: Show input field for weight
                     const storedWeight = workoutWeights[exerciseKey];
                     const defaultValue = storedWeight ? storedWeight.toFixed(1) : '';
-                    html += `<div style="margin-top:10px">`;
-                    html += `<label style="display:block;margin-bottom:6px">Weight (${globalUnit}):</label>`;
-                    html += `<input type="number" id="weight-input-${exIdx}" value="${defaultValue}" placeholder="Enter weight" step="0.1" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);margin-bottom:8px">`;
-                    html += `<button onclick="saveExerciseWeight('${key}', '${ex.name}', ${exIdx}, ${weekNum})" style="padding:6px 12px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
+                    html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
+                    html += `<label style="min-width:70px">Weight (${globalUnit}):</label>`;
+                    html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${defaultValue}" placeholder="Enter weight" step="0.1" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color)">`;
+                    html += `<button onclick="saveExerciseWeight('${key}', '${ex.name}', ${weekNum}, ${dayIdx}, ${exIdx})" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
                     html += `</div>`;
                     if (storedWeight) {
-                        html += `<div style="margin-top:12px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(storedWeight, globalUnit)}</div>`;
+                        html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(storedWeight, globalUnit)}</div>`;
                     }
+                    
                 } else {
-                    // Weeks 2-4: Calculate weight with +5 increase per week
                     const baseWeight = workoutWeights[exerciseKey];
                     if (baseWeight) {
                         const weekMultiplier = weekNum - 1;
                         const calculatedWeight = baseWeight + (weekMultiplier * 5);
-                        html += `<div style="margin-top:10px;padding:10px;background:var(--container-bg);border-radius:4px">Week ${weekNum} weight (Base + ${weekMultiplier * 5}):<br>${calculatePlateDisplay(calculatedWeight, globalUnit)}</div>`;
+                        html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
+                        html += `<label style="min-width:70px">Week ${weekNum}:</label>`;
+                        html += `<div style="font-weight:bold;color:var(--button-bg)">${calculatedWeight.toFixed(1)} ${globalUnit}</div>`;
+                        html += `</div>`;
+                        html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(calculatedWeight, globalUnit)}</div>`;
                     } else {
                         html += `<div style="margin-top:10px;color:var(--text-color)">Set weight in Week 1 to see progression</div>`;
                     }
@@ -1596,27 +1638,73 @@
                 saveAppState();
             }
             
-            function saveExerciseWeight(key, exerciseName, exIdx, weekNum) {
-                const inputId = `weight-input-${exIdx}`;
+            function saveExerciseWeight(key, exerciseName, weekNum, dayIdx, exIdx) {
+                const inputId = `weight-input-${weekNum}-${dayIdx}-${exIdx}`;
                 const input = document.getElementById(inputId);
-                const weight = parseFloat(input.value);
-                
+                const weight = parseFloat(input && input.value);
+
                 if (isNaN(weight) || weight <= 0) {
                     alert('Please enter a valid weight');
                     return;
                 }
-                
+
                 const exerciseKey = getExerciseKey(key, exerciseName);
                 workoutWeights[exerciseKey] = weight;
                 saveWorkoutWeights();
                 
-                // Update just the detail div content, don't toggle display
-                const detailDiv = document.getElementById(`exercise-detail-${weekNum}-${currentDay}-${exIdx}`);
-                const ex = workoutPlans[key].weeks.find(w => w.num === weekNum).days[currentDay].exercises[exIdx];
-                let html = `<strong>${ex.name}</strong><br>Sets: ${ex.sets} | Reps: ${ex.reps}<br><br>`;
-                html += `<div style="padding:10px;background:var(--container-bg);border-radius:4px;margin-bottom:10px"><strong style="color:var(--button-bg)">✓ Weight saved: ${weight.toFixed(1)} ${globalUnit}</strong></div>`;
-                html += `<div style="padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(weight, globalUnit)}</div>`;
+                // Rebuild the detail panel for this exercise (keep it expanded)
+                const detailDiv = document.getElementById(`exercise-detail-${weekNum}-${dayIdx}-${exIdx}`);
+                const ex = workoutPlans[key].weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                const completed = completedExercises.has(eid);
+
+                let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
+                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${ex.reps}</div>`;
+                html += `<button onclick="toggleComplete('${key}', ${weekNum}, ${dayIdx}, ${exIdx})" id="complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}" style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completed? 'var(--button-bg)' : 'transparent'};color:${completed? 'white' : 'var(--text-color)'}">${completed? '✓ Completed' : 'Complete'}</button>`;
+                html += `</div>`;
+
+                // Inline weight input + saved display
+                html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
+                html += `<label style="min-width:70px">Weight (${globalUnit}):</label>`;
+                html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${weight.toFixed(1)}" placeholder="Enter weight" step="0.1" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color)">`;
+                html += `<button onclick="saveExerciseWeight('${key}', '${ex.name}', ${weekNum}, ${dayIdx}, ${exIdx})" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
+                html += `</div>`;
+                html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(weight, globalUnit)}</div>`;
+
                 detailDiv.innerHTML = html;
+            }
+
+            function toggleComplete(key, weekNum, dayIdx, exIdx) {
+                const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                if (completedExercises.has(eid)) {
+                    completedExercises.delete(eid);
+                } else {
+                    completedExercises.add(eid);
+                }
+                saveCompletedExercises();
+
+                // Update button UI if present
+                const btn = document.getElementById(`complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`);
+                if (btn) {
+                    const done = completedExercises.has(eid);
+                    btn.textContent = done ? '✓ Completed' : 'Complete';
+                    btn.style.background = done ? 'var(--button-bg)' : 'transparent';
+                    btn.style.color = done ? 'white' : 'var(--text-color)';
+                }
+                // Update the collapsed list button highlight if present
+                const listBtn = document.getElementById(`exercise-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`);
+                if (listBtn) {
+                    const done = completedExercises.has(eid);
+                    if (done) {
+                        listBtn.classList.add('completed');
+                        listBtn.style.background = 'var(--button-bg)';
+                        listBtn.style.color = 'white';
+                    } else {
+                        listBtn.classList.remove('completed');
+                        listBtn.style.background = 'var(--container-bg)';
+                        listBtn.style.color = 'var(--text-color)';
+                    }
+                }
             }
 
             // Keyboard accessibility for workout choices
@@ -1625,8 +1713,9 @@
                     el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); el.click(); } });
                 });
 
-                // Load saved weights
+                // Load saved weights and completed state
                 loadWorkoutWeights();
+                loadCompletedExercises();
 
                 // Try to restore UI state (page/program/week/day). If none, default to general
                 const restored = loadAppState();
@@ -1666,6 +1755,22 @@
                         ticking = true;
                     }
                 }, { passive: true });
+            })();
+
+            // Load app version from version.json and apply to UI
+            (function() {
+                fetch('./version.json', { cache: 'no-store' })
+                    .then(r => r.json())
+                    .then(obj => {
+                        const v = obj && obj.version ? obj.version : '0.3';
+                        const appVer = document.getElementById('app-version');
+                        const menuVer = document.getElementById('menu-version');
+                        if (appVer) appVer.textContent = `v${v}`;
+                        if (menuVer) menuVer.textContent = `v${v}`;
+                    })
+                    .catch(() => {
+                        // ignore failures, keep default text
+                    });
             })();
     </script>
 </body>

@@ -1,52 +1,62 @@
-const CACHE_NAME = 'weight-converter-v0.2';
 const urlsToCache = [
   './index.html',
   './manifest.json',
   './peter.jpeg'
 ];
 
-// Install service worker
+// Helper to get active cache name (fallback to v0.3)
+function currentCacheName() {
+  return self.CACHE_NAME || 'weight-converter-v0.3';
+}
+
+// Install service worker — read version.json to choose cache name
 self.addEventListener('install', event => {
-  // Force the waiting service worker to become the active service worker
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    fetch('./version.json', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(obj => {
+        const ver = obj && obj.version ? obj.version : '0.3';
+        const CACHE_NAME = `weight-converter-v${ver}`;
+        self.CACHE_NAME = CACHE_NAME;
+        return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
+      })
+      .catch(() => {
+        // fallback
+        const CACHE_NAME = 'weight-converter-v0.3';
+        self.CACHE_NAME = CACHE_NAME;
+        return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
+      })
   );
 });
 
-// Fetch from cache
+// Fetch from cache — use the currently set cache name
 self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(fetchResponse => {
-        // Update cache with new version
-        return caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, fetchResponse.clone());
+        return caches.open(currentCacheName()).then(cache => {
+          try { cache.put(event.request, fetchResponse.clone()); } catch (e) { /* ignore */ }
           return fetchResponse;
         });
       })
-      .catch(() => {
-        // If network fails, try cache
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 
-// Update service worker
+// Update service worker: remove old caches that don't match current cache
 self.addEventListener('activate', event => {
-  // Take control of all pages immediately
   event.waitUntil(
-    clients.claim().then(() => {
-      return caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      });
-    })
+    (async () => {
+      await clients.claim();
+      const cacheNames = await caches.keys();
+      const keep = currentCacheName();
+      await Promise.all(
+        cacheNames.map(name => {
+          if (name !== keep) return caches.delete(name);
+          return Promise.resolve();
+        })
+      );
+    })()
   );
 });

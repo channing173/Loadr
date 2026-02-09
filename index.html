@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Weight Converter">
+    <meta name="apple-mobile-web-app-title" content="Loadr">
     <meta name="theme-color" content="#4CAF50">
     <link rel="manifest" href="manifest.json">
-    <title>Weight Converter</title>
+    <title>Loadr</title>
     <style>
         :root {
             --bg-color: #f0f0f0;
@@ -134,29 +134,39 @@
         }
         
         .hamburger {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            position: fixed;
+            top: 12px;
+            right: 16px;
             background: none;
             border: none;
             cursor: pointer;
             padding: 10px;
-            z-index: 1001;
+            z-index: 1100;
+            transition: transform 0.22s ease;
+            will-change: transform;
         }
         
         .app-title {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: fixed;
+            top: 12px;
+            left: 16px;
             font-size: 13.44px;
             font-weight: bold;
             color: var(--text-color);
-            z-index: 900;
+            z-index: 1100;
             max-width: calc(100% - 120px);
             line-height: 33px;
             padding: 10px 0;
             cursor: pointer;
             user-select: none;
+            transition: transform 0.22s ease;
+            will-change: transform;
+        }
+
+        /* Hidden state when scrolling down */
+        .app-title.hidden,
+        .hamburger.hidden {
+            transform: translateY(-140%);
         }
         
         .easter-egg-overlay {
@@ -490,6 +500,14 @@
             const overlay = document.querySelector('.menu-overlay');
             menu.classList.toggle('open');
             overlay.classList.toggle('show');
+
+            // Ensure header is visible when menu opens
+            const title = document.getElementById('app-title');
+            const hamb = document.querySelector('.hamburger');
+            if (menu.classList.contains('open')) {
+                title.classList.remove('hidden');
+                hamb.classList.remove('hidden');
+            }
         }
         
         // Global unit toggle
@@ -524,6 +542,56 @@
             
             toggleMenu();
         }
+
+        // Save/restore app UI state (current page/program/week/day + expanded exercises)
+        function saveAppState() {
+            try {
+                const activePageEl = document.querySelector('.page.active');
+                const page = activePageEl ? activePageEl.id.replace('-page','') : 'workout';
+                const state = {
+                    page: page,
+                    program: currentProgram,
+                    week: currentWeek,
+                    day: currentDay,
+                    expanded: Array.from(expandedExercises)
+                };
+                localStorage.setItem('appState', JSON.stringify(state));
+            } catch (e) {
+                console.error('Failed to save app state', e);
+            }
+        }
+
+        function loadAppState() {
+            try {
+                const raw = localStorage.getItem('appState');
+                if (!raw) return false;
+                const state = JSON.parse(raw);
+                if (state.page) showPage(state.page, false);
+                if (state.program) selectProgram(state.program);
+                if (state.week) showWeek(state.program || currentProgram, state.week);
+                if (state.day !== null && state.day !== undefined) showDay(state.program || currentProgram, state.week, state.day);
+
+                // Restore expanded exercise panels after day is shown
+                if (Array.isArray(state.expanded) && state.expanded.length) {
+                    expandedExercises = new Set(state.expanded);
+                    state.expanded.forEach(id => {
+                        const parts = String(id).split(':');
+                        if (parts.length === 4) {
+                            const key = parts[0];
+                            const weekNum = parseInt(parts[1], 10);
+                            const dayIdx = parseInt(parts[2], 10);
+                            const exIdx = parseInt(parts[3], 10);
+                            try { showExercise(null, key, weekNum, dayIdx, exIdx); } catch (e) { /* ignore */ }
+                        }
+                    });
+                }
+
+                return true;
+            } catch (e) {
+                console.error('Failed to load app state', e);
+                return false;
+            }
+        }
         
         // Page switching functionality
         function showPage(pageName, closeMenu = true) {
@@ -547,6 +615,8 @@
             }
 
             if (closeMenu) toggleMenu();
+            // Persist current page
+            saveAppState();
         }
         
         // Unit conversion functionality
@@ -1206,6 +1276,8 @@
             
             // Store base weights for exercises (from week 1)
             let workoutWeights = {};
+            // Track which exercise detail panels are expanded: entries like "program:week:day:exIdx"
+            let expandedExercises = new Set();
             
             // Load weights from localStorage
             function loadWorkoutWeights() {
@@ -1338,6 +1410,8 @@
                 currentProgram = key;
                 currentWeek = null;
                 displayWeeks(key);
+                // Persist selected program
+                saveAppState();
             }
 
             function displayWeeks(key) {
@@ -1381,6 +1455,8 @@
                 }
                 
                 contentDiv.innerHTML = html;
+                // Persist selected week
+                saveAppState();
             }
             
             function exportWeek4ToWeek1(key) {
@@ -1449,27 +1525,45 @@
             }
 
             function showExercise(event, key, weekNum, dayIdx, exIdx) {
-                event.stopPropagation();
-                
+                if (event && event.stopPropagation) event.stopPropagation();
+
                 const week = workoutPlans[key].weeks.find(w => w.num === weekNum);
                 const day = week.days[dayIdx];
                 const ex = day.exercises[exIdx];
                 const detailDiv = document.getElementById(`exercise-detail-${weekNum}-${dayIdx}-${exIdx}`);
                 const exerciseKey = getExerciseKey(key, ex.name);
-                
+
+                const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+
                 // Toggle expand/collapse
                 const isExpanded = detailDiv.style.display !== 'none';
                 if (isExpanded) {
                     detailDiv.style.display = 'none';
+                    expandedExercises.delete(eid);
+                    saveAppState();
                     return;
                 }
-                
-                // Collapse all other exercises in this day
+
+                // Collapse all other exercises in this day and remove them from expanded set
                 document.querySelectorAll(`[id^="exercise-detail-${weekNum}-${dayIdx}-"]`).forEach(div => {
-                    div.style.display = 'none';
+                    if (div !== detailDiv) {
+                        // extract index from id
+                        const match = div.id.match(/exercise-detail-(\d+)-(\d+)-(\d+)/);
+                        if (match) {
+                            const otherWeek = parseInt(match[1],10);
+                            const otherDay = parseInt(match[2],10);
+                            const otherEx = parseInt(match[3],10);
+                            const otherId = `${key}:${otherWeek}:${otherDay}:${otherEx}`;
+                            expandedExercises.delete(otherId);
+                        }
+                        div.style.display = 'none';
+                    }
                 });
-                
+
                 detailDiv.style.display = 'block';
+                expandedExercises.add(eid);
+                saveAppState();
+
                 let html = `<strong>${ex.name}</strong><br>Sets: ${ex.sets} | Reps: ${ex.reps}<br><br>`;
                 
                 // Handle weight display and input
@@ -1498,6 +1592,8 @@
                 }
                 
                 detailDiv.innerHTML = html;
+                // Persist selected day
+                saveAppState();
             }
             
             function saveExerciseWeight(key, exerciseName, exIdx, weekNum) {
@@ -1531,10 +1627,46 @@
 
                 // Load saved weights
                 loadWorkoutWeights();
-                
-                // Default to general health
-                selectProgram('general');
+
+                // Try to restore UI state (page/program/week/day). If none, default to general
+                const restored = loadAppState();
+                if (!restored) {
+                    selectProgram('general');
+                }
             });
+
+            // Hide header as soon as user scrolls away from the top; show only at top
+            (function() {
+                const container = document.querySelector('.container');
+                const title = document.getElementById('app-title');
+                const hamb = document.querySelector('.hamburger');
+                if (!container || !title || !hamb) return;
+
+                const threshold = 2; // px from top
+                let ticking = false;
+
+                container.addEventListener('scroll', () => {
+                    const current = container.scrollTop;
+                    if (!ticking) {
+                        window.requestAnimationFrame(() => {
+                            const menuOpen = document.querySelector('.menu.open');
+                            if (menuOpen) {
+                                // keep header visible while menu is open
+                                title.classList.remove('hidden');
+                                hamb.classList.remove('hidden');
+                            } else if (current <= threshold) {
+                                title.classList.remove('hidden');
+                                hamb.classList.remove('hidden');
+                            } else {
+                                title.classList.add('hidden');
+                                hamb.classList.add('hidden');
+                            }
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
+                }, { passive: true });
+            })();
     </script>
 </body>
 </html>

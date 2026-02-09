@@ -1,12 +1,13 @@
 const urlsToCache = [
   './index.html',
   './manifest.json',
+  './version.json',
   './peter.jpeg'
 ];
 
-// Helper to get active cache name (fallback to v0.3)
+// Helper to get active cache name (fallback to v0.4, must match version.json)
 function currentCacheName() {
-  return self.CACHE_NAME || 'weight-converter-v0.3';
+  return self.CACHE_NAME || 'weight-converter-v0.4';
 }
 
 // Install service worker — read version.json to choose cache name
@@ -22,8 +23,8 @@ self.addEventListener('install', event => {
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })
       .catch(() => {
-        // fallback
-        const CACHE_NAME = 'weight-converter-v0.3';
+        // fallback to v0.4 (must match version.json)
+        const CACHE_NAME = 'weight-converter-v0.4';
         self.CACHE_NAME = CACHE_NAME;
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })

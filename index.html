@@ -364,7 +364,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.3</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.4</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -397,7 +397,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="forceUpdate()">Update</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.3</div>
+        <div class="menu-version" id="menu-version">v0.4</div>
     </div>
     
     <div class="container">
@@ -1762,7 +1762,7 @@
                 fetch('./version.json', { cache: 'no-store' })
                     .then(r => r.json())
                     .then(obj => {
-                        const v = obj && obj.version ? obj.version : '0.3';
+                        const v = obj && obj.version ? obj.version : '0.4';
                         const appVer = document.getElementById('app-version');
                         const menuVer = document.getElementById('menu-version');
                         if (appVer) appVer.textContent = `v${v}`;

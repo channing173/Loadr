@@ -588,6 +588,26 @@
             // Update lastPlateUnit so converter re-renders correctly
             lastPlateUnit = globalUnit;
 
+            // Convert custom exercise increments if needed
+            try {
+                if (customPlan) {
+                    for (let w = 0; w < customPlan.weeks.length; w++) {
+                        customPlan.weeks[w].days.forEach(day => {
+                            day.exercises.forEach(ex => {
+                                if (ex.increment) {
+                                    if (previousUnit === 'lbs' && globalUnit === 'kg') {
+                                        ex.increment = Math.round((ex.increment * 0.453592) * 10) / 10;
+                                    } else if (previousUnit === 'kg' && globalUnit === 'lbs') {
+                                        ex.increment = Math.round((ex.increment * 2.20462) * 10) / 10;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                    saveCustomPlan();
+                }
+            } catch (e) { /* ignore */ }
+
             // Re-render current program/week/day so displayed numbers update in-place
             try {
                 if (currentProgram) {

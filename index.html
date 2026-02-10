@@ -1410,6 +1410,8 @@
             
             // Store base weights for exercises (from week 1)
             let workoutWeights = {};
+            // Store reps for exercises per week: exerciseReps[key:weekNum] = reps value
+            let exerciseReps = {};
             // Track which exercise detail panels are expanded: entries like "program:week:day:exIdx"
             let expandedExercises = new Set();
             // Track completed exercises (entries like "program:week:day:exIdx")
@@ -1428,6 +1430,39 @@
             // Save weights to localStorage
             function saveWorkoutWeights() {
                 localStorage.setItem('workoutWeights', JSON.stringify(workoutWeights));
+            }
+            
+            // Load reps from localStorage
+            function loadExerciseReps() {
+                const saved = localStorage.getItem('exerciseReps');
+                if (saved) {
+                    exerciseReps = JSON.parse(saved);
+                }
+            }
+            
+            // Save reps to localStorage
+            function saveExerciseReps() {
+                localStorage.setItem('exerciseReps', JSON.stringify(exerciseReps));
+            }
+            
+            // Transform reps based on user input (e.g., 8-10 -> 7-9 if user enters 7)
+            function transformReps(currentReps, newRepsInput) {
+                // Check if current reps is a range (e.g., "8-10")
+                const rangeMatch = String(currentReps).match(/^(\d+)-(\d+)$/);
+                const newInput = parseInt(newRepsInput);
+                
+                if (isNaN(newInput)) return currentReps;
+                
+                if (rangeMatch) {
+                    const low = parseInt(rangeMatch[1]);
+                    const high = parseInt(rangeMatch[2]);
+                    const range = high - low;
+                    // Create new range with same spread
+                    return `${newInput}-${newInput + range}`;
+                } else {
+                    // Single number, return as is
+                    return String(newInput);
+                }
             }
 
             function loadCompletedExercises() {
@@ -1691,24 +1726,51 @@
             
             function exportWeek4ToWeek1(key) {
                 let count = 0;
+                const processedExercises = new Set(); // Track which exercises we've already processed
                 
                 // Get all exercises from the program
                 const plan = (key === 'custom') ? customPlan : workoutPlans[key];
-                plan.weeks[0].days.forEach(day => {
-                    day.exercises.forEach(ex => {
+                plan.weeks[0].days.forEach((day, dayIdx) => {
+                    day.exercises.forEach((ex, exIdx) => {
                         const exerciseKey = getExerciseKey(key, ex.name);
+                        
+                        // Skip if we've already processed this exercise (handles duplicates across days)
+                        if (processedExercises.has(exerciseKey)) {
+                            return;
+                        }
+                        processedExercises.add(exerciseKey);
+                        
                         const baseWeight = workoutWeights[exerciseKey];
                         if (baseWeight) {
-                            // Calculate week 4 weight using custom increment if available
+                            // Get the week 4 exercise object to ensure consistent increment
+                            const week4Ex = plan.weeks[3].days[dayIdx].exercises[exIdx];
+                            
+                            // Calculate week 4 weight using the SAME logic as showExercise, using week 4 exercise's increment
                             let increment;
-                            if (key === 'custom') {
-                                increment = ex.increment || (globalUnit === 'lbs' ? 5 : 2.5);
+                            if (week4Ex.increment !== undefined) {
+                                // Always treat increment as lbs, convert if needed
+                                increment = (globalUnit === 'kg') ? +(week4Ex.increment * 0.453592).toFixed(1) : week4Ex.increment;
                             } else {
-                                increment = (globalUnit === 'lbs') ? 5 : 2.5;
+                                increment = (globalUnit === 'kg') ? 2.5 : 5;
                             }
                             const week4Weight = baseWeight + (increment * 3);
                             // Store as new week 1 base weight
                             workoutWeights[exerciseKey] = week4Weight;
+                            
+                            // Export week 4 reps to week 1: get from stored value and update prescribed reps
+                            const week4RepsKey = `${exerciseKey}:4`;
+                            const week4Reps = exerciseReps[week4RepsKey] || week4Ex.reps;
+                            if (week4Reps) {
+                                // Update the new week 1 exercise's prescribed reps
+                                ex.reps = week4Reps;
+                                // Store in per-week storage as well
+                                exerciseReps[`${exerciseKey}:1`] = week4Reps;
+                                // Clear out weeks 2-4 reps so they regenerate from the new week 1 value
+                                delete exerciseReps[`${exerciseKey}:2`];
+                                delete exerciseReps[`${exerciseKey}:3`];
+                                delete exerciseReps[`${exerciseKey}:4`];
+                            }
+                            
                             count++;
                         }
                     });
@@ -1720,6 +1782,7 @@
                 }
                 
                 saveWorkoutWeights();
+                saveExerciseReps();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
                 // Clear completed exercise marks when exporting week 4 to week 1
                 completedExercises.clear();
@@ -1769,7 +1832,7 @@
                 dayContentDiv.innerHTML = html;
             }
 
-            function showExercise(event, key, weekNum, dayIdx, exIdx) {
+            function showExercise(event, key, weekNum, dayIdx, exIdx, skipToggle = false) {
                 if (event && event.stopPropagation) event.stopPropagation();
 
                 const plan = (key === 'custom') ? customPlan : workoutPlans[key];
@@ -1781,13 +1844,15 @@
 
                 const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
 
-                // Toggle expand/collapse
-                const isExpanded = detailDiv.style.display !== 'none';
-                if (isExpanded) {
-                    detailDiv.style.display = 'none';
-                    expandedExercises.delete(eid);
-                    saveAppState();
-                    return;
+                // Toggle expand/collapse (skip if called from save functions)
+                if (!skipToggle) {
+                    const isExpanded = detailDiv.style.display !== 'none';
+                    if (isExpanded) {
+                        detailDiv.style.display = 'none';
+                        expandedExercises.delete(eid);
+                        saveAppState();
+                        return;
+                    }
                 }
 
                 // Collapse all other exercises in this day and remove them from expanded set
@@ -1811,26 +1876,28 @@
 
                 // Header row with name/info and complete button (right-aligned)
                 const completed = completedExercises.has(eid);
+                const storedReps = exerciseReps[exerciseKey];
+                const displayReps = storedReps || ex.reps;
                 let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${ex.reps}</div>`;
+                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${displayReps}</div>`;
                 html += `<button onclick="toggleComplete('${key}', ${weekNum}, ${dayIdx}, ${exIdx})" id="complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}" style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completed? 'var(--button-bg)' : 'transparent'};color:${completed? 'white' : 'var(--text-color)'}">${completed? '✓ Completed' : 'Complete'}</button>`;
                 html += `</div>`;
                 
-                // Handle weight display and input — inline with label
+                // Handle weight and reps display inline
                 if (weekNum === 1) {
                     const storedWeight = workoutWeights[exerciseKey];
-                    const defaultValue = storedWeight ? storedWeight.toFixed(1) : '';
-                    html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
-                    html += `<label style="min-width:70px">Weight (${globalUnit}):</label>`;
-                    html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${defaultValue}" placeholder="Enter weight" step="0.1" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color)">`;
-                    html += `<button onclick="saveExerciseWeight('${key}', '${ex.name}', ${weekNum}, ${dayIdx}, ${exIdx})" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
+                    const defaultValue = storedWeight ? storedWeight.toFixed(1).replace(/\.0$/, '') : '';
+                    
+                    const currentRepsKey = `${exerciseKey}:${weekNum}`;
+                    const storedWeekReps = exerciseReps[currentRepsKey];
+                    const repsDisplay = storedWeekReps || displayReps;
+                    
+                    html += `<div style="display:flex;align-items:center;gap:6px;margin-top:8px">`;
+                    html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
+                    html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                    html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}" value="${repsDisplay}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
+                    html += `<button onclick="(function(){saveExerciseWeight('${key}', null, ${weekNum}, ${dayIdx}, ${exIdx}, true); saveExerciseReps('${key}', null, ${weekNum}, ${dayIdx}, ${exIdx});})();" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
                     html += `</div>`;
-                    if (storedWeight) {
-                        const isBarbell = ex.name.toLowerCase().includes('barbell');
-                        if (isBarbell) {
-                            html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(storedWeight, globalUnit, ex.name)}</div>`;
-                        }
-                    }
                     
                 } else {
                     const baseWeight = workoutWeights[exerciseKey];
@@ -1845,16 +1912,45 @@
                             increment = (globalUnit === 'kg') ? 2.5 : 5;
                         }
                         const calculatedWeight = baseWeight + (weekMultiplier * increment);
-                        html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
-                        html += `<label style="min-width:70px">Week ${weekNum}:</label>`;
-                        html += `<div style="font-weight:bold;color:var(--button-bg)">${calculatedWeight.toFixed(1)} ${globalUnit}</div>`;
+                        
+                        const currentRepsKey = `${exerciseKey}:${weekNum}`;
+                        const storedWeekReps = exerciseReps[currentRepsKey];
+                        const repsDisplay = storedWeekReps || displayReps;
+                        
+                        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:8px">`;
+                        html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
+                        html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                        html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}" value="${repsDisplay}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
                         html += `</div>`;
+                    } else {
+                        html += `<div style="margin-top:10px;color:var(--text-color)">Set weight in Week 1 to see progression</div>`;
+                    }
+                }
+                
+                // Add plate display if applicable
+                if (weekNum === 1) {
+                    const storedWeight = workoutWeights[exerciseKey];
+                    if (storedWeight) {
+                        const isBarbell = ex.name.toLowerCase().includes('barbell');
+                        if (isBarbell) {
+                            html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(storedWeight, globalUnit, ex.name)}</div>`;
+                        }
+                    }
+                } else {
+                    const baseWeight = workoutWeights[exerciseKey];
+                    if (baseWeight) {
+                        const weekMultiplier = weekNum - 1;
+                        let increment;
+                        if (ex.increment !== undefined) {
+                            increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
+                        } else {
+                            increment = (globalUnit === 'kg') ? 2.5 : 5;
+                        }
+                        const calculatedWeight = baseWeight + (weekMultiplier * increment);
                         const isBarbell = ex.name.toLowerCase().includes('barbell');
                         if (isBarbell) {
                             html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(calculatedWeight, globalUnit, ex.name)}</div>`;
                         }
-                    } else {
-                        html += `<div style="margin-top:10px;color:var(--text-color)">Set weight in Week 1 to see progression</div>`;
                     }
                 }
                 
@@ -1863,48 +1959,125 @@
                 saveAppState();
             }
             
-            function saveExerciseWeight(key, exerciseName, weekNum, dayIdx, exIdx) {
+            function saveExerciseWeight(key, exerciseName, weekNum, dayIdx, exIdx, skipRebuild = false) {
                 const inputId = `weight-input-${weekNum}-${dayIdx}-${exIdx}`;
                 const input = document.getElementById(inputId);
                 const weight = parseFloat(input && input.value);
 
-                if (isNaN(weight) || weight <= 0) {
-                    alert('Please enter a valid weight');
+                // Only save if weight is provided and valid
+                if (weight && !isNaN(weight) && weight > 0) {
+                    // Get exercise name from plan if not provided
+                    const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                    if (!exerciseName && plan) {
+                        const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                        exerciseName = ex.name;
+                    }
+
+                    const exerciseKey = getExerciseKey(key, exerciseName);
+                    workoutWeights[exerciseKey] = weight;
+                    saveWorkoutWeights();
+                }
+                
+                // Rebuild the panel unless skipped
+                if (!skipRebuild) {
+                    const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                    if (plan) {
+                        showExercise(null, key, weekNum, dayIdx, exIdx, true);
+                    }
+                }
+            }
+            
+            function saveExerciseReps(key, exerciseName, weekNum, dayIdx, exIdx, skipRebuild = false) {
+                // If called with no arguments, just save localStorage
+                if (arguments.length === 0) {
+                    localStorage.setItem('exerciseReps', JSON.stringify(exerciseReps));
+                    return;
+                }
+                
+                const inputId = `reps-input-${weekNum}-${dayIdx}-${exIdx}`;
+                const input = document.getElementById(inputId);
+                
+                if (!input) {
+                    // Silent fail if input doesn't exist (e.g., called from toggleComplete)
+                    return;
+                }
+                
+                const reps = input.value.trim();
+
+                if (!reps) {
+                    alert('Please enter reps (e.g., 8-10 or 5)');
                     return;
                 }
 
-                const exerciseKey = getExerciseKey(key, exerciseName);
-                workoutWeights[exerciseKey] = weight;
-                saveWorkoutWeights();
-                
-                // Rebuild the detail panel for this exercise (keep it expanded)
-                const detailDiv = document.getElementById(`exercise-detail-${weekNum}-${dayIdx}-${exIdx}`);
+                // Get exercise name from plan if not provided
                 const plan = (key === 'custom') ? customPlan : workoutPlans[key];
-                const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
-                const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
-                const completed = completedExercises.has(eid);
-
-                let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${ex.reps}</div>`;
-                html += `<button onclick="toggleComplete('${key}', ${weekNum}, ${dayIdx}, ${exIdx})" id="complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}" style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completed? 'var(--button-bg)' : 'transparent'};color:${completed? 'white' : 'var(--text-color)'}">${completed? '✓ Completed' : 'Complete'}</button>`;
-                html += `</div>`;
-
-                // Inline weight input + saved display
-                html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;
-                html += `<label style="min-width:70px">Weight (${globalUnit}):</label>`;
-                html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${weight.toFixed(1)}" placeholder="Enter weight" step="0.1" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color)">`;
-                html += `<button onclick="saveExerciseWeight('${key}', '${ex.name}', ${weekNum}, ${dayIdx}, ${exIdx})" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
-                html += `</div>`;
-                const isBarbell = ex.name.toLowerCase().includes('barbell');
-                if (isBarbell) {
-                    html += `<div style="margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px">${calculatePlateDisplay(weight, globalUnit, ex.name)}</div>`;
+                if (!exerciseName && plan) {
+                    const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                    exerciseName = ex.name;
                 }
 
-                detailDiv.innerHTML = html;
+                const exerciseKey = getExerciseKey(key, exerciseName);
+                const currentRepsKey = `${exerciseKey}:${weekNum}`;
+                
+                // Store reps for this week
+                exerciseReps[currentRepsKey] = reps;
+                
+                // If Week 1, clear weeks 2-4 stored reps so they regenerate from new Week 1 value
+                if (weekNum === 1) {
+                    delete exerciseReps[`${exerciseKey}:2`];
+                    delete exerciseReps[`${exerciseKey}:3`];
+                    delete exerciseReps[`${exerciseKey}:4`];
+                }
+                
+                // If not week 4, calculate and store next week's reps
+                if (weekNum < 4) {
+                    const currentEx = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                    const nextWeekEx = plan.weeks.find(w => w.num === weekNum + 1).days[dayIdx].exercises[exIdx];
+                    
+                    // Get next week's current reps
+                    const nextWeekKey = `${exerciseKey}:${weekNum + 1}`;
+                    const nextWeekCurrentReps = exerciseReps[nextWeekKey] || nextWeekEx.reps;
+                    
+                    // Transform next week's reps based on current input
+                    const transformedReps = transformReps(nextWeekCurrentReps, reps);
+                    
+                    // Store in exerciseReps and UPDATE the exercise's reps prescription
+                    exerciseReps[nextWeekKey] = transformedReps;
+                    nextWeekEx.reps = transformedReps;
+                }
+                
+                saveExerciseReps();
+                
+                // Rebuild the detail panel unless skipped
+                if (!skipRebuild && plan) {
+                    showExercise(null, key, weekNum, dayIdx, exIdx, true);
+                }
             }
 
             function toggleComplete(key, weekNum, dayIdx, exIdx) {
                 const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                
+                // Save weight first (if week 1) so values are persisted before panel rebuilds
+                if (weekNum === 1) {
+                    const weightInput = document.getElementById(`weight-input-${weekNum}-${dayIdx}-${exIdx}`);
+                    if (weightInput && weightInput.value) {
+                        saveExerciseWeight(key, null, weekNum, dayIdx, exIdx, true);
+                    }
+                }
+                
+                // Save reps (after weight, so panel rebuild shows correct weight)
+                const repsInput = document.getElementById(`reps-input-${weekNum}-${dayIdx}-${exIdx}`);
+                if (repsInput && repsInput.value) {
+                    saveExerciseReps(key, null, weekNum, dayIdx, exIdx);
+                } else {
+                    // If no reps input, still rebuild the panel
+                    const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                    if (plan) {
+                        showExercise(null, key, weekNum, dayIdx, exIdx, true);
+                    }
+                }
+                
+                // Toggle complete state
                 if (completedExercises.has(eid)) {
                     completedExercises.delete(eid);
                 } else {
@@ -2160,6 +2333,7 @@
 
                 // Load saved weights and completed state
                 loadWorkoutWeights();
+                loadExerciseReps();
                 loadCompletedExercises();
                 loadCustomPlan();
 

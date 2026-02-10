@@ -262,7 +262,7 @@
         }
         
         .menu-item {
-            padding: 15px 20px;
+            padding: 7.5px 10px;
             border-bottom: 1px solid rgba(128, 128, 128, 0.3);
         }
         
@@ -374,7 +374,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.5</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.7</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -407,7 +407,10 @@
         <div class="menu-item">
             <button class="menu-button" onclick="forceUpdate()">Update</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.5</div>
+        <div class="menu-item">
+            <button class="menu-button" onclick="resetApp()">Reset App</button>
+        </div>
+        <div class="menu-version" id="menu-version">v0.7</div>
     </div>
     
     <div class="container">
@@ -807,9 +810,37 @@
             }
         }
         
+        // Reset app to initial state
+        function resetApp() {
+            if (confirm('Are you sure you want to reset the app? This will clear all your data and return it to the initial state.')) {
+                // Clear all localStorage items
+                localStorage.clear();
+                
+                // Reset all state variables to initial values
+                currentProgram = null;
+                currentWeek = null;
+                currentDay = null;
+                workoutWeights = {};
+                exerciseReps = {};
+                expandedExercises = new Set();
+                completedExercises = new Set();
+                completedSets = new Set();
+                customPlan = null;
+                
+                // Close menu
+                toggleMenu();
+                
+                // Show confirmation message
+                alert('App has been reset. All data has been cleared.');
+                
+                // Reload the page to reflect changes
+                window.location.reload();
+            }
+        }
+        
         // Load saved theme on page load
         window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             const button = document.querySelector('.dark-mode-toggle');
             
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -1416,6 +1447,8 @@
             let expandedExercises = new Set();
             // Track completed exercises (entries like "program:week:day:exIdx")
             let completedExercises = new Set();
+            // Track completed individual sets (entries like "program:week:day:exIdx:setNum")
+            let completedSets = new Set();
             // Custom plan storage: { numDays, weeks: [ { num: 1, days: [...] }, ... ] }
             let customPlan = null;
             
@@ -1445,13 +1478,32 @@
                 localStorage.setItem('exerciseReps', JSON.stringify(exerciseReps));
             }
             
+            // Calculate average of reps values (array of "8", "7", "8" -> average as number)
+            function averageReps(repsArray) {
+                if (!Array.isArray(repsArray) || repsArray.length === 0) return 0;
+                const nums = repsArray.map(r => {
+                    const num = parseInt(r);
+                    return isNaN(num) ? 0 : num;
+                });
+                const sum = nums.reduce((a, b) => a + b, 0);
+                return Math.round(sum / nums.length);
+            }
+            
             // Transform reps based on user input (e.g., 8-10 -> 7-9 if user enters 7)
+            // Can accept either a single value or array of values (uses average)
             function transformReps(currentReps, newRepsInput) {
-                // Check if current reps is a range (e.g., "8-10")
-                const rangeMatch = String(currentReps).match(/^(\d+)-(\d+)$/);
-                const newInput = parseInt(newRepsInput);
+                // If newRepsInput is an array, average it first
+                let newInput;
+                if (Array.isArray(newRepsInput)) {
+                    newInput = averageReps(newRepsInput);
+                } else {
+                    newInput = parseInt(newRepsInput);
+                }
                 
                 if (isNaN(newInput)) return currentReps;
+                
+                // Check if current reps is a range (e.g., "8-10")
+                const rangeMatch = String(currentReps).match(/^(\d+)-(\d+)$/);
                 
                 if (rangeMatch) {
                     const low = parseInt(rangeMatch[1]);
@@ -1477,6 +1529,21 @@
             function saveCompletedExercises() {
                 try {
                     localStorage.setItem('completedExercises', JSON.stringify(Array.from(completedExercises)));
+                } catch (e) { /* ignore */ }
+            }
+
+            function loadCompletedSets() {
+                try {
+                    const raw = localStorage.getItem('completedSets');
+                    if (!raw) return;
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) completedSets = new Set(arr);
+                } catch (e) { /* ignore */ }
+            }
+
+            function saveCompletedSets() {
+                try {
+                    localStorage.setItem('completedSets', JSON.stringify(Array.from(completedSets)));
                 } catch (e) { /* ignore */ }
             }
 
@@ -1757,6 +1824,12 @@
                             // Store as new week 1 base weight
                             workoutWeights[exerciseKey] = week4Weight;
                             
+                            // Also update per-set weights so they reflect the new week 1 starting weight
+                            for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                const setWeightKey = `${exerciseKey}:${setNum}`;
+                                workoutWeights[setWeightKey] = week4Weight;
+                            }
+                            
                             // Export week 4 reps to week 1: get from stored value and update prescribed reps
                             const week4RepsKey = `${exerciseKey}:4`;
                             const week4Reps = exerciseReps[week4RepsKey] || week4Ex.reps;
@@ -1765,10 +1838,23 @@
                                 ex.reps = week4Reps;
                                 // Store in per-week storage as well
                                 exerciseReps[`${exerciseKey}:1`] = week4Reps;
+                                
+                                // Clear per-set reps for week 1 so all sets use the new uniform rep value
+                                for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                    delete exerciseReps[`${exerciseKey}:1:${setNum}`];
+                                }
+                                
                                 // Clear out weeks 2-4 reps so they regenerate from the new week 1 value
                                 delete exerciseReps[`${exerciseKey}:2`];
                                 delete exerciseReps[`${exerciseKey}:3`];
                                 delete exerciseReps[`${exerciseKey}:4`];
+                                
+                                // Also clear per-set reps for weeks 2-4
+                                for (let week = 2; week <= 4; week++) {
+                                    for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                        delete exerciseReps[`${exerciseKey}:${week}:${setNum}`];
+                                    }
+                                }
                             }
                             
                             count++;
@@ -1784,9 +1870,11 @@
                 saveWorkoutWeights();
                 saveExerciseReps();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
-                // Clear completed exercise marks when exporting week 4 to week 1
+                // Clear all completion progress when exporting week 4 to week 1
                 completedExercises.clear();
+                completedSets.clear();
                 saveCompletedExercises();
+                saveCompletedSets();
                 
                 // Navigate to week 1
                 showWeek(key, 1);
@@ -1874,32 +1962,46 @@
                 expandedExercises.add(eid);
                 saveAppState();
 
-                // Header row with name/info and complete button (right-aligned)
-                const completed = completedExercises.has(eid);
+                // Header row with name/info and completion status (right-aligned)
                 const storedReps = exerciseReps[exerciseKey];
                 const displayReps = storedReps || ex.reps;
                 let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets} | Reps: ${displayReps}</div>`;
-                html += `<button onclick="toggleComplete('${key}', ${weekNum}, ${dayIdx}, ${exIdx})" id="complete-btn-${key}-${weekNum}-${dayIdx}-${exIdx}" style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completed? 'var(--button-bg)' : 'transparent'};color:${completed? 'white' : 'var(--text-color)'}">${completed? '✓ Completed' : 'Complete'}</button>`;
+                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets}</div>`;
+                // Show completion status (only for Week 1; weeks 2-4 track per-set completion below)
+                if (weekNum === 1) {
+                    // For Week 1, show completion status
+                    let completedCount = 0;
+                    for (let s = 1; s <= ex.sets; s++) {
+                        const checkSetId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${s}`;
+                        if (completedSets.has(checkSetId)) completedCount++;
+                    }
+                    html += `<div style="padding:6px 10px;border-radius:4px;border:1px solid var(--choice-border);background:${completedCount === ex.sets ? 'var(--button-bg)' : 'transparent'};color:${completedCount === ex.sets ? 'white' : 'var(--text-color)'}">${completedCount}/${ex.sets}</div>`;
+                }
                 html += `</div>`;
                 
                 // Handle weight and reps display inline
                 if (weekNum === 1) {
-                    const storedWeight = workoutWeights[exerciseKey];
-                    const defaultValue = storedWeight ? storedWeight.toFixed(1).replace(/\.0$/, '') : '';
-                    
-                    const currentRepsKey = `${exerciseKey}:${weekNum}`;
-                    const storedWeekReps = exerciseReps[currentRepsKey];
-                    const repsDisplay = storedWeekReps || displayReps;
-                    
-                    html += `<div style="display:flex;align-items:center;gap:6px;margin-top:8px">`;
-                    html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
-                    html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                    html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}" value="${repsDisplay}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
-                    html += `<button onclick="(function(){saveExerciseWeight('${key}', null, ${weekNum}, ${dayIdx}, ${exIdx}, true); saveExerciseReps('${key}', null, ${weekNum}, ${dayIdx}, ${exIdx});})();" style="padding:6px 10px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>`;
-                    html += `</div>`;
+                    // Week 1: Generate rows for each set
+                    for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                        const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
+                        const isSetDone = completedSets.has(setId);
+                        const storedWeight = workoutWeights[`${exerciseKey}:${setNum}`] || workoutWeights[exerciseKey];
+                        const defaultValue = storedWeight ? storedWeight.toFixed(1).replace(/\.0$/, '') : '';
+                        
+                        const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
+                        const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                        
+                        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px">`;
+                        html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
+                        html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                        html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                        html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                        html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                        html += `</div>`;
+                    }
                     
                 } else {
+                    // Weeks 2-4: Show per-set rows with calculated weight
                     const baseWeight = workoutWeights[exerciseKey];
                     if (baseWeight) {
                         const weekMultiplier = weekNum - 1;
@@ -1913,15 +2015,22 @@
                         }
                         const calculatedWeight = baseWeight + (weekMultiplier * increment);
                         
-                        const currentRepsKey = `${exerciseKey}:${weekNum}`;
-                        const storedWeekReps = exerciseReps[currentRepsKey];
-                        const repsDisplay = storedWeekReps || displayReps;
-                        
-                        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:8px">`;
-                        html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
-                        html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                        html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}" value="${repsDisplay}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit">`;
-                        html += `</div>`;
+                        // Generate rows for each set
+                        for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                            const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
+                            const isSetDone = completedSets.has(setId);
+                            
+                            const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
+                            const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                            
+                            html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px">`;
+                            html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
+                            html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
+                            html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                            html += `</div>`;
+                        }
                     } else {
                         html += `<div style="margin-top:10px;color:var(--text-color)">Set weight in Week 1 to see progression</div>`;
                     }
@@ -2053,6 +2162,149 @@
                     showExercise(null, key, weekNum, dayIdx, exIdx, true);
                 }
             }
+
+            function completeSet(key, weekNum, dayIdx, exIdx, setNum) {
+                const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
+                const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                const exerciseName = ex.name;
+                const exerciseKey = getExerciseKey(key, exerciseName);
+                const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                
+                // Toggle completion state
+                if (completedSets.has(setId)) {
+                    // Uncomplete this set
+                    completedSets.delete(setId);
+                    saveCompletedSets();
+                    
+                    // Uncomplete the exercise for all weeks
+                    if (completedExercises.has(eid)) {
+                        completedExercises.delete(eid);
+                        saveCompletedExercises();
+                    }
+                } else {
+                    // Complete this set
+                    
+                    // Save weight for this set (only for Week 1 - has weight input)
+                    if (weekNum === 1) {
+                        const weightInput = document.getElementById(`weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
+                        const weight = parseFloat(weightInput && weightInput.value);
+                        
+                        if (weight && !isNaN(weight) && weight > 0) {
+                            workoutWeights[`${exerciseKey}:${setNum}`] = weight;
+                            // Also update the base key if not set
+                            if (!workoutWeights[exerciseKey]) {
+                                workoutWeights[exerciseKey] = weight;
+                            }
+                            saveWorkoutWeights();
+                        }
+                    }
+                    
+                    // Save reps for this set
+                    const repsInput = document.getElementById(`reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
+                    const reps = repsInput && repsInput.value.trim();
+                    
+                    if (reps) {
+                        const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
+                        exerciseReps[setRepsKey] = reps;
+                        saveExerciseReps();
+                    }
+                    
+                    // Mark this set as completed
+                    completedSets.add(setId);
+                    saveCompletedSets();
+                    
+                    // Check if all sets are completed for this exercise
+                    let allSetsDone = true;
+                    for (let s = 1; s <= ex.sets; s++) {
+                        const checkSetId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${s}`;
+                        if (!completedSets.has(checkSetId)) {
+                            allSetsDone = false;
+                            break;
+                        }
+                    }
+                    
+                    // If all sets done
+                    if (allSetsDone) {
+                        // Mark exercise as complete for all weeks
+                        if (!completedExercises.has(eid)) {
+                            completedExercises.add(eid);
+                            saveCompletedExercises();
+                        }
+                        
+                        // Calculate average reps and update next weeks (for weeks 1-3)
+                        if (weekNum < 4) {
+                            const allSetReps = [];
+                            for (let s = 1; s <= ex.sets; s++) {
+                                const repsKey = `${exerciseKey}:${weekNum}:${s}`;
+                                const setRepsValue = exerciseReps[repsKey] || ex.reps;
+                                allSetReps.push(setRepsValue);
+                            }
+                            
+                            if (allSetReps.length > 0) {
+                                // Calculate average and transform for next weeks
+                                const averageValue = averageReps(allSetReps);
+                                
+                                // Update subsequent weeks with average
+                                for (let week = weekNum + 1; week <= 4; week++) {
+                                    const nextWeekEx = plan.weeks.find(w => w.num === week).days[dayIdx].exercises[exIdx];
+                                    let increment;
+                                    if (nextWeekEx.increment !== undefined) {
+                                        increment = (globalUnit === 'kg') ? +(nextWeekEx.increment * 0.453592).toFixed(1) : nextWeekEx.increment;
+                                    } else {
+                                        increment = (globalUnit === 'kg') ? 2.5 : 5;
+                                    }
+                                    
+                                    const transformedReps = transformReps(nextWeekEx.reps, averageValue);
+                                    const nextWeekKey = `${exerciseKey}:${week}`;
+                                    
+                                    // Store base reps for this week with average applied
+                                    exerciseReps[nextWeekKey] = transformedReps;
+                                    // Also update prescribed reps
+                                    nextWeekEx.reps = transformedReps;
+                                    
+                                    // Populate per-set reps for weeks 2-4 with the average
+                                    for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                        const setRepsKey = `${exerciseKey}:${week}:${setNum}`;
+                                        exerciseReps[setRepsKey] = transformedReps;
+                                    }
+                                }
+                                saveExerciseReps();
+                            }
+                        }
+                    }
+                }
+                
+                // Update exercise button styling inline
+                const exerciseBtn = document.getElementById(`exercise-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`);
+                if (exerciseBtn) {
+                    // Check if all sets are now completed
+                    let allSetsDone = true;
+                    for (let s = 1; s <= ex.sets; s++) {
+                        const checkSetId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${s}`;
+                        if (!completedSets.has(checkSetId)) {
+                            allSetsDone = false;
+                            break;
+                        }
+                    }
+                    
+                    if (allSetsDone && completedExercises.has(eid)) {
+                        exerciseBtn.classList.add('completed');
+                        exerciseBtn.style.background = 'var(--button-bg)';
+                        exerciseBtn.style.color = 'white';
+                        exerciseBtn.style.borderColor = 'var(--button-bg)';
+                    } else {
+                        exerciseBtn.classList.remove('completed');
+                        exerciseBtn.style.background = 'var(--container-bg)';
+                        exerciseBtn.style.color = 'var(--text-color)';
+                        exerciseBtn.style.borderColor = 'var(--choice-border)';
+                    }
+                }
+                
+                // Rebuild the panel
+                showExercise(null, key, weekNum, dayIdx, exIdx, true);
+            }
+
 
             function toggleComplete(key, weekNum, dayIdx, exIdx) {
                 const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
@@ -2335,12 +2587,13 @@
                 loadWorkoutWeights();
                 loadExerciseReps();
                 loadCompletedExercises();
+                loadCompletedSets();
                 loadCustomPlan();
 
-                // Try to restore UI state (page/program/week/day). If none, default to general
+                // Try to restore UI state (page/program/week/day). If none, default to power (Powerlifting)
                 const restored = loadAppState();
                 if (!restored) {
-                    selectProgram('general');
+                    selectProgram('power');
                 }
             });
 

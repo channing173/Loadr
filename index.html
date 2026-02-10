@@ -466,6 +466,7 @@
             
             <div class="results" id="unit-results"></div>
         </div>
+        
     </div>
     
     <script>
@@ -1105,71 +1106,127 @@
             const workoutPlans = {
                 power: { weeks: [
                     { num: 1, days: [
-                        { name: "Day A", exercises: [
-                            { name: "Barbell Squat", sets: 3, reps: 5 },
+                        { name: "Day 1", exercises: [
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "Barbell Squat", sets: 3, reps: 5, increment: 10 },
+                            { name: "Back Extension", sets: 2, reps: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Calf Extension", sets: 2, reps: "12-15" }
+                        ]},
+                        { name: "Day 2", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
                             { name: "Barbell Bench", sets: 3, reps: 5 },
-                            { name: "Row", sets: 3, reps: 8 }
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" },
+                            { name: "T Bar Row", sets: 2, reps: "8-10" },
+                            { name: "DB Bicep Curl", sets: 2, reps: 10 }
                         ]},
-                        { name: "Day B", exercises: [
-                            { name: "Barbell Deadlift", sets: 1, reps: 5 },
-                            { name: "Barbell OHP", sets: 3, reps: 5 },
-                            { name: "Pullup", sets: 3, reps: "6-8" }
+                        { name: "Day 3", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell Deadlift", sets: 2, reps: 5, increment: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Lying Leg Curl", sets: 2, reps: "10-12" },
+                            { name: "Hanging Leg Raise", sets: 3, reps: "12-15" }
                         ]},
-                        { name: "Day C", exercises: [
-                            { name: "Barbell Squat (Lighter)", sets: 3, reps: 5 },
-                            { name: "Barbell Bench (Volume)", sets: 3, reps: 5 },
-                            { name: "Hamstring Work", sets: 3, reps: "8-10" }
+                        { name: "Day 4", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell OHP", sets: 2, reps: 5 },
+                            { name: "DB Incline Bench", sets: 2, reps: "10-12" },
+                            { name: "DB Bicep Curl", sets: 2, reps: "10-12" },
+                            { name: "DB Lateral Raise", sets: 2, reps: "12-15" },
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" }
                         ]}
                     ]},
                     { num: 2, days: [
-                        { name: "Day A", exercises: [
-                            { name: "Barbell Squat", sets: 3, reps: 5 },
+                        { name: "Day 1", exercises: [
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "Barbell Squat", sets: 3, reps: 5, increment: 10 },
+                            { name: "Back Extension", sets: 2, reps: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Calf Extension", sets: 2, reps: "12-15" }
+                        ]},
+                        { name: "Day 2", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
                             { name: "Barbell Bench", sets: 3, reps: 5 },
-                            { name: "Row", sets: 3, reps: 8 }
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" },
+                            { name: "T Bar Row", sets: 2, reps: "8-10" },
+                            { name: "DB Bicep Curl", sets: 2, reps: 10 }
                         ]},
-                        { name: "Day B", exercises: [
-                            { name: "Barbell Deadlift", sets: 1, reps: 5 },
-                            { name: "Barbell OHP", sets: 3, reps: 5 },
-                            { name: "Pullup", sets: 3, reps: "6-8" }
+                        { name: "Day 3", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell Deadlift", sets: 2, reps: 5, increment: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Lying Leg Curl", sets: 2, reps: "10-12" },
+                            { name: "Hanging Leg Raise", sets: 3, reps: "12-15" }
                         ]},
-                        { name: "Day C", exercises: [
-                            { name: "Barbell Squat (Lighter)", sets: 3, reps: 5 },
-                            { name: "Barbell Bench (Volume)", sets: 3, reps: 5 },
-                            { name: "Hamstring Work", sets: 3, reps: "8-10" }
+                        { name: "Day 4", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell OHP", sets: 2, reps: 5 },
+                            { name: "DB Incline Bench", sets: 2, reps: "10-12" },
+                            { name: "DB Bicep Curl", sets: 2, reps: "10-12" },
+                            { name: "DB Lateral Raise", sets: 2, reps: "12-15" },
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" }
                         ]}
                     ]},
                     { num: 3, days: [
-                        { name: "Day A", exercises: [
-                            { name: "Barbell Squat", sets: 3, reps: 5 },
+                        { name: "Day 1", exercises: [
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "Barbell Squat", sets: 3, reps: 5, increment: 10 },
+                            { name: "Back Extension", sets: 2, reps: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Calf Extension", sets: 2, reps: "12-15" }
+                        ]},
+                        { name: "Day 2", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
                             { name: "Barbell Bench", sets: 3, reps: 5 },
-                            { name: "Row", sets: 3, reps: 8 }
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" },
+                            { name: "T Bar Row", sets: 2, reps: "8-10" },
+                            { name: "DB Bicep Curl", sets: 2, reps: 10 }
                         ]},
-                        { name: "Day B", exercises: [
-                            { name: "Barbell Deadlift", sets: 1, reps: 5 },
-                            { name: "Barbell OHP", sets: 3, reps: 5 },
-                            { name: "Pullup", sets: 3, reps: "6-8" }
+                        { name: "Day 3", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell Deadlift", sets: 2, reps: 5, increment: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Lying Leg Curl", sets: 2, reps: "10-12" },
+                            { name: "Hanging Leg Raise", sets: 3, reps: "12-15" }
                         ]},
-                        { name: "Day C", exercises: [
-                            { name: "Barbell Squat (Lighter)", sets: 3, reps: 5 },
-                            { name: "Barbell Bench (Volume)", sets: 3, reps: 5 },
-                            { name: "Hamstring Work", sets: 3, reps: "8-10" }
+                        { name: "Day 4", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell OHP", sets: 2, reps: 5 },
+                            { name: "DB Incline Bench", sets: 2, reps: "10-12" },
+                            { name: "DB Bicep Curl", sets: 2, reps: "10-12" },
+                            { name: "DB Lateral Raise", sets: 2, reps: "12-15" },
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" }
                         ]}
                     ]},
                     { num: 4, days: [
-                        { name: "Day A", exercises: [
-                            { name: "Barbell Squat", sets: 3, reps: 5 },
+                        { name: "Day 1", exercises: [
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "Barbell Squat", sets: 3, reps: 5, increment: 10 },
+                            { name: "Back Extension", sets: 2, reps: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Calf Extension", sets: 2, reps: "12-15" }
+                        ]},
+                        { name: "Day 2", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
                             { name: "Barbell Bench", sets: 3, reps: 5 },
-                            { name: "Row", sets: 3, reps: 8 }
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" },
+                            { name: "T Bar Row", sets: 2, reps: "8-10" },
+                            { name: "DB Bicep Curl", sets: 2, reps: 10 }
                         ]},
-                        { name: "Day B", exercises: [
-                            { name: "Barbell Deadlift", sets: 1, reps: 5 },
-                            { name: "Barbell OHP", sets: 3, reps: 5 },
-                            { name: "Pullup", sets: 3, reps: "6-8" }
+                        { name: "Day 3", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell Deadlift", sets: 2, reps: 5, increment: 10 },
+                            { name: "Leg Extension", sets: 2, reps: "10-12" },
+                            { name: "Lying Leg Curl", sets: 2, reps: "10-12" },
+                            { name: "Hanging Leg Raise", sets: 3, reps: "12-15" }
                         ]},
-                        { name: "Day C", exercises: [
-                            { name: "Barbell Squat (Lighter)", sets: 3, reps: 5 },
-                            { name: "Barbell Bench (Volume)", sets: 3, reps: 5 },
-                            { name: "Hamstring Work", sets: 3, reps: "8-10" }
+                        { name: "Day 4", exercises: [
+                            { name: "Lat Pullover", sets: 2, reps: "10-12" },
+                            { name: "Barbell OHP", sets: 2, reps: 5 },
+                            { name: "DB Incline Bench", sets: 2, reps: "10-12" },
+                            { name: "DB Bicep Curl", sets: 2, reps: "10-12" },
+                            { name: "DB Lateral Raise", sets: 2, reps: "12-15" },
+                            { name: "Tricep Pushdown", sets: 2, reps: "10-12" }
                         ]}
                     ]}
                 ]},
@@ -1781,10 +1838,11 @@
                         const weekMultiplier = weekNum - 1;
                         // Use custom increment for custom exercises, otherwise use unit-based increment
                         let increment;
-                        if (key === 'custom') {
-                            increment = ex.increment || (globalUnit === 'lbs' ? 5 : 2.5);
+                        if (ex.increment !== undefined) {
+                            // Always treat increment as lbs, convert if needed
+                            increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
                         } else {
-                            increment = (globalUnit === 'lbs') ? 5 : 2.5;
+                            increment = (globalUnit === 'kg') ? 2.5 : 5;
                         }
                         const calculatedWeight = baseWeight + (weekMultiplier * increment);
                         html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">`;

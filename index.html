@@ -374,7 +374,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.7</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.72</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -410,15 +410,13 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.7</div>
+        <div class="menu-version" id="menu-version">v0.72</div>
     </div>
     
     <div class="container">
         <!-- Workout Planner Page -->
         <div id="workout-page" class="page active">
             <h1>Workout Planner</h1>
-            <div class="small" style="margin-bottom:12px">Choose your focus below to get a simple starter plan.</div>
-
             <div class="choices" role="tablist">
                 <div class="choice" id="power" role="tab" tabindex="0" onclick="selectProgram('power')">
                     <strong>Powerlifting</strong>
@@ -550,9 +548,9 @@
                 // Convert the weight to the new unit
                 let convertedWeight;
                 if (globalUnit === 'kg' && lastPlateUnit === 'lbs') {
-                    convertedWeight = lastPlateWeight * 0.453592;
+                    convertedWeight = Math.round(lastPlateWeight * 0.453592);
                 } else if (globalUnit === 'lbs' && lastPlateUnit === 'kg') {
-                    convertedWeight = lastPlateWeight * 2.20462;
+                    convertedWeight = Math.round(lastPlateWeight * 2.20462);
                 } else {
                     convertedWeight = lastPlateWeight;
                 }
@@ -579,9 +577,9 @@
                         const val = parseFloat(workoutWeights[k]);
                         if (!isNaN(val)) {
                             if (previousUnit === 'lbs' && globalUnit === 'kg') {
-                                workoutWeights[k] = Math.round((val * 0.453592) * 10) / 10;
+                                workoutWeights[k] = Math.round(val * 0.453592);
                             } else if (previousUnit === 'kg' && globalUnit === 'lbs') {
-                                workoutWeights[k] = Math.round((val * 2.20462) * 10) / 10;
+                                workoutWeights[k] = Math.round(val * 2.20462);
                             }
                         }
                     });
@@ -600,9 +598,9 @@
                             day.exercises.forEach(ex => {
                                 if (ex.increment) {
                                     if (previousUnit === 'lbs' && globalUnit === 'kg') {
-                                        ex.increment = Math.round((ex.increment * 0.453592) * 10) / 10;
+                                        ex.increment = Math.round(ex.increment * 0.453592);
                                     } else if (previousUnit === 'kg' && globalUnit === 'lbs') {
-                                        ex.increment = Math.round((ex.increment * 2.20462) * 10) / 10;
+                                        ex.increment = Math.round(ex.increment * 2.20462);
                                     }
                                 }
                             });
@@ -1264,90 +1262,114 @@
                 body: { weeks: [
                     { num: 1, days: [
                         { name: "Chest + Triceps", exercises: [
-                            { name: "Barbell Bench Press", sets: 4, reps: "8-10" },
+                            { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
-                            { name: "Barbell Rows", sets: 4, reps: "8-10" },
-                            { name: "Pullups", sets: 3, reps: "6-10" },
-                            { name: "Barbell Curls", sets: 3, reps: "8-12" }
+                            { name: "Lat Pulldown", sets: 3, reps: "8-10" },
+                            { name: "Barbell Rows", sets: 3, reps: "8-10" },
+                            { name: "Low Row", sets: 3, reps: "8-10" },
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "DB Curls", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Legs", exercises: [
-                            { name: "Barbell Squats", sets: 4, reps: "8-10" },
-                            { name: "Leg Press", sets: 3, reps: "10-12" },
-                            { name: "Leg Curls", sets: 3, reps: "10-12" }
+                            { name: "Barbell Squats", sets: 3, reps: "8-10" },
+                            { name: "Leg Press", sets: 3, reps: "12-15" },
+                            { name: "Hamstring Curls", sets: 3, reps: "10-12" },
+                            { name: "Leg Extension", sets: 3, reps: "10-12" }
                         ]},
                         { name: "Shoulders + Arms", exercises: [
-                            { name: "Barbell Military Press", sets: 4, reps: "8-10" },
-                            { name: "Lateral Raises", sets: 3, reps: "12-15" },
-                            { name: "Hammer Curls", sets: 3, reps: "8-12" }
+                            { name: "Barbell Military Press", sets: 3, reps: "8-10" },
+                            { name: "DB Lateral Raises", sets: 3, reps: "12-15" },
+                            { name: "Rear Delt Flies", sets: 3, reps: "12-15" },
+                            { name: "Hammer Curls", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]}
                     ]},
                     { num: 2, days: [
                         { name: "Chest + Triceps", exercises: [
-                            { name: "Barbell Bench Press", sets: 4, reps: "8-10" },
+                            { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
-                            { name: "Barbell Rows", sets: 4, reps: "8-10" },
-                            { name: "Pullups", sets: 3, reps: "6-10" },
-                            { name: "Barbell Curls", sets: 3, reps: "8-12" }
+                            { name: "Lat Pulldown", sets: 3, reps: "8-10" },
+                            { name: "Barbell Rows", sets: 3, reps: "8-10" },
+                            { name: "Low Row", sets: 3, reps: "8-10" },
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "DB Curls", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Legs", exercises: [
-                            { name: "Barbell Squats", sets: 4, reps: "8-10" },
-                            { name: "Leg Press", sets: 3, reps: "10-12" },
-                            { name: "Leg Curls", sets: 3, reps: "10-12" }
+                            { name: "Barbell Squats", sets: 3, reps: "8-10" },
+                            { name: "Leg Press", sets: 3, reps: "12-15" },
+                            { name: "Hamstring Curls", sets: 3, reps: "10-12" },
+                            { name: "Leg Extension", sets: 3, reps: "10-12" }
                         ]},
                         { name: "Shoulders + Arms", exercises: [
-                            { name: "Barbell Military Press", sets: 4, reps: "8-10" },
-                            { name: "Lateral Raises", sets: 3, reps: "12-15" },
-                            { name: "Hammer Curls", sets: 3, reps: "8-12" }
+                            { name: "Barbell Military Press", sets: 3, reps: "8-10" },
+                            { name: "DB Lateral Raises", sets: 3, reps: "12-15" },
+                            { name: "Rear Delt Flies", sets: 3, reps: "12-15" },
+                            { name: "Hammer Curls", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]}
                     ]},
                     { num: 3, days: [
                         { name: "Chest + Triceps", exercises: [
-                            { name: "Barbell Bench Press", sets: 4, reps: "8-10" },
+                            { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
-                            { name: "Barbell Rows", sets: 4, reps: "8-10" },
-                            { name: "Pullups", sets: 3, reps: "6-10" },
-                            { name: "Barbell Curls", sets: 3, reps: "8-12" }
+                            { name: "Lat Pulldown", sets: 3, reps: "8-10" },
+                            { name: "Barbell Rows", sets: 3, reps: "8-10" },
+                            { name: "Low Row", sets: 3, reps: "8-10" },
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "DB Curls", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Legs", exercises: [
-                            { name: "Barbell Squats", sets: 4, reps: "8-10" },
-                            { name: "Leg Press", sets: 3, reps: "10-12" },
-                            { name: "Leg Curls", sets: 3, reps: "10-12" }
+                            { name: "Barbell Squats", sets: 3, reps: "8-10" },
+                            { name: "Leg Press", sets: 3, reps: "12-15" },
+                            { name: "Hamstring Curls", sets: 3, reps: "10-12" },
+                            { name: "Leg Extension", sets: 3, reps: "10-12" }
                         ]},
                         { name: "Shoulders + Arms", exercises: [
-                            { name: "Barbell Military Press", sets: 4, reps: "8-10" },
-                            { name: "Lateral Raises", sets: 3, reps: "12-15" },
-                            { name: "Hammer Curls", sets: 3, reps: "8-12" }
+                            { name: "Barbell Military Press", sets: 3, reps: "8-10" },
+                            { name: "DB Lateral Raises", sets: 3, reps: "12-15" },
+                            { name: "Rear Delt Flies", sets: 3, reps: "12-15" },
+                            { name: "Hammer Curls", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]}
                     ]},
                     { num: 4, days: [
                         { name: "Chest + Triceps", exercises: [
-                            { name: "Barbell Bench Press", sets: 4, reps: "8-10" },
+                            { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
-                            { name: "Barbell Rows", sets: 4, reps: "8-10" },
-                            { name: "Pullups", sets: 3, reps: "6-10" },
-                            { name: "Barbell Curls", sets: 3, reps: "8-12" }
+                            { name: "Lat Pulldown", sets: 3, reps: "8-10" },
+                            { name: "Barbell Rows", sets: 3, reps: "8-10" },
+                            { name: "Low Row", sets: 3, reps: "8-10" },
+                            { name: "Lat Pullover", sets: 3, reps: "10-12" },
+                            { name: "DB Curls", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Legs", exercises: [
-                            { name: "Barbell Squats", sets: 4, reps: "8-10" },
-                            { name: "Leg Press", sets: 3, reps: "10-12" },
-                            { name: "Leg Curls", sets: 3, reps: "10-12" }
+                            { name: "Barbell Squats", sets: 3, reps: "8-10" },
+                            { name: "Leg Press", sets: 3, reps: "12-15" },
+                            { name: "Hamstring Curls", sets: 3, reps: "10-12" },
+                            { name: "Leg Extension", sets: 3, reps: "10-12" }
                         ]},
                         { name: "Shoulders + Arms", exercises: [
-                            { name: "Barbell Military Press", sets: 4, reps: "8-10" },
-                            { name: "Lateral Raises", sets: 3, reps: "12-15" },
-                            { name: "Hammer Curls", sets: 3, reps: "8-12" }
+                            { name: "Barbell Military Press", sets: 3, reps: "8-10" },
+                            { name: "DB Lateral Raises", sets: 3, reps: "12-15" },
+                            { name: "Rear Delt Flies", sets: 3, reps: "12-15" },
+                            { name: "Hammer Curls", sets: 3, reps: "8-12" },
+                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
                         ]}
                     ]}
                 ]},
@@ -1966,7 +1988,7 @@
                 const storedReps = exerciseReps[exerciseKey];
                 const displayReps = storedReps || ex.reps;
                 let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-                html += `<div><strong>${ex.name}</strong><br style="margin-bottom:4px">Sets: ${ex.sets}</div>`;
+                html += `<div><strong>${ex.name}</strong>${ex.sets ? `<br style="margin-bottom:4px">Sets: ${ex.sets}` : ''}</div>`;
                 // Show completion status (only for Week 1; weeks 2-4 track per-set completion below)
                 if (weekNum === 1) {
                     // For Week 1, show completion status
@@ -1982,6 +2004,8 @@
                 // Handle weight and reps display inline
                 if (weekNum === 1) {
                     // Week 1: Generate rows for each set
+                    const isCardioOrStretching = ex.name === "Light Cardio" || ex.name === "Stretching";
+                    
                     for (let setNum = 1; setNum <= ex.sets; setNum++) {
                         const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
                         const isSetDone = completedSets.has(setId);
@@ -1991,13 +2015,22 @@
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
                         const storedSetReps = exerciseReps[setRepsKey] || displayReps;
                         
-                        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px">`;
-                        html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
-                        html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
-                        html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                        html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
-                        html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
-                        html += `</div>`;
+                        if (isCardioOrStretching) {
+                            // For cardio/stretching: only show reps and check button
+                            html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px">`;
+                            html += `<span style="font-weight:bold;color:var(--text-color)">${storedSetReps}</span>`;
+                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                            html += `</div>`;
+                        } else {
+                            // For regular exercises: show weight x reps format
+                            html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px">`;
+                            html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
+                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                            html += `</div>`;
+                        }
                     }
                     
                 } else {

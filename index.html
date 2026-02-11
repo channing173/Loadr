@@ -2071,7 +2071,7 @@
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                             html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
@@ -2127,7 +2127,7 @@
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                             html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises

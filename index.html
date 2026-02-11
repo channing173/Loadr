@@ -384,7 +384,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.81</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.82</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -420,7 +420,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.81</div>
+        <div class="menu-version" id="menu-version">v0.82</div>
     </div>
     
     <div class="container">
@@ -2072,11 +2072,11 @@
                             html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
                             html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
-                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
                             if (ex.name.toLowerCase().includes('barbell')) {
-                                html += `<button id="plate-btn-${weekNum}-${dayIdx}-${exIdx}-${setNum}" onclick="togglePlateDisplay('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:#888888;color:white;border:none;border-radius:4px;cursor:pointer" title="Toggle plate display"><svg width="12" height="12" viewBox="0 0 24 24" style="vertical-align:middle"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/></svg></button>`;
+                                html += `<button id="plate-btn-${weekNum}-${dayIdx}-${exIdx}-${setNum}" onclick="togglePlateDisplay('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="display:flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;background:#888888;color:white;border:none;border-radius:4px;cursor:pointer" title="Toggle plate display"><svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/></svg></button>`;
                                 html += `<div id="plate-display-${weekNum}-${dayIdx}-${exIdx}-${setNum}" style="display:none;flex-basis:100%;margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px"></div>`;
                             }
                             
@@ -2128,11 +2128,11 @@
                             html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
                             html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
-                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                            html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
                             if (ex.name.toLowerCase().includes('barbell')) {
-                                html += `<button id="plate-btn-${weekNum}-${dayIdx}-${exIdx}-${setNum}" onclick="togglePlateDisplay('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="padding:6px 10px;background:#888888;color:white;border:none;border-radius:4px;cursor:pointer" title="Toggle plate display"><svg width="12" height="12" viewBox="0 0 24 24" style="vertical-align:middle"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/></svg></button>`;
+                                html += `<button id="plate-btn-${weekNum}-${dayIdx}-${exIdx}-${setNum}" onclick="togglePlateDisplay('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="display:flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;background:#888888;color:white;border:none;border-radius:4px;cursor:pointer" title="Toggle plate display"><svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/></svg></button>`;
                                 html += `<div id="plate-display-${weekNum}-${dayIdx}-${exIdx}-${setNum}" style="display:none;flex-basis:100%;margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px"></div>`;
                             }
                             

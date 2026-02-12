@@ -390,9 +390,104 @@
             font-size: 18px;
             font-weight: bold;
         }
+
+        /* Install Modal */
+        .install-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .install-modal.show {
+            display: flex;
+        }
+
+        .install-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .install-icon {
+            font-size: 70px;
+            margin-bottom: 20px;
+        }
+
+        .install-card h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .install-card p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .install-btn-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .install-primary-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .install-primary-btn:hover {
+            background: #45a049;
+        }
+
+        .install-secondary-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            color: #4CAF50;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .install-secondary-btn:hover {
+            background: rgba(76, 175, 80, 0.1);
+        }
     </style>
 </head>
 <body>
+    <!-- Install Modal -->
+    <div class="install-modal" id="installModal">
+        <div class="install-card">
+            <div class="install-icon">⚖️</div>
+            <h2>Install Loadr</h2>
+            <p>Get quick access from your home screen</p>
+            <div class="install-btn-container">
+                <button class="install-primary-btn" id="installModalBtn">Install</button>
+                <button class="install-secondary-btn" id="dismissInstallBtn">Maybe Later</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-title" id="app-title">Loadr <span id="app-version">v0.83</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
@@ -864,6 +959,44 @@
             button.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
         });
         
+        // PWA Install Modal Logic
+        let deferredPrompt;
+        const installModal = document.getElementById('installModal');
+        const installModalBtn = document.getElementById('installModalBtn');
+        const dismissInstallBtn = document.getElementById('dismissInstallBtn');
+
+        // Show install prompt when it's available
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show the install modal
+            installModal.classList.add('show');
+        });
+
+        // Handle install button click
+        installModalBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response: ${outcome}`);
+                // Hide modal either way
+                installModal.classList.remove('show');
+                deferredPrompt = null;
+            }
+        });
+
+        // Handle dismiss/maybe later click
+        dismissInstallBtn.addEventListener('click', () => {
+            installModal.classList.remove('show');
+        });
+
+        // Hide modal when installed
+        window.addEventListener('appinstalled', () => {
+            installModal.classList.remove('show');
+            deferredPrompt = null;
+            console.log('PWA installed successfully');
+        });
+        
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./service-worker.js')
@@ -897,21 +1030,6 @@
                 })
                 .catch(error => console.log('Service Worker registration failed:', error));
         }
-        
-        // Handle PWA install prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('PWA install prompt available');
-            // Optionally show an install button here
-            // You can create a custom install button and call deferredPrompt.prompt() on click
-        });
-        
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA installed successfully');
-            deferredPrompt = null;
-        });
         
         // Allow Enter key to trigger conversion
         document.getElementById('weight-input').addEventListener('keypress', function(event) {

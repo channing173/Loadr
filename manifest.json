@@ -1,6 +1,6 @@
 {
-  "name": "Weight Converter",
-  "short_name": "WeightConv",
+  "name": "Loadr",
+  "short_name": "Loadr",
   "description": "Convert barbell weights to plate combinations",
   "start_url": "./index.html",
   "display": "standalone",

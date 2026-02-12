@@ -479,11 +479,19 @@
     <div class="install-modal" id="installModal">
         <div class="install-card">
             <div class="install-icon">⚖️</div>
-            <h2>Install Loadr</h2>
-            <p>Get quick access from your home screen</p>
-            <div class="install-btn-container">
+            <h2 id="installTitle">Install Loadr</h2>
+            <p id="installDesc">Get quick access from your home screen</p>
+            <div class="install-btn-container" id="installBtnContainer">
                 <button class="install-primary-btn" id="installModalBtn">Install</button>
                 <button class="install-secondary-btn" id="dismissInstallBtn">Maybe Later</button>
+            </div>
+            <div id="safariInstructions" style="display:none;text-align:left;margin-top:20px;padding:15px;background:#f5f5f5;border-radius:10px;font-size:14px;">
+                <p style="margin:0 0 10px 0;font-weight:bold;color:#333">On Safari:</p>
+                <ol style="margin:0;padding-left:20px;color:#666">
+                    <li>Tap the Share button (↗️)</li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Tap "Add" in the top right</li>
+                </ol>
             </div>
         </div>
     </div>
@@ -964,8 +972,38 @@
         const installModal = document.getElementById('installModal');
         const installModalBtn = document.getElementById('installModalBtn');
         const dismissInstallBtn = document.getElementById('dismissInstallBtn');
+        const safariInstructions = document.getElementById('safariInstructions');
+        const installBtnContainer = document.getElementById('installBtnContainer');
+        const installTitle = document.getElementById('installTitle');
+        const installDesc = document.getElementById('installDesc');
 
-        // Show install prompt when it's available
+        // Detect if browser is Safari
+        function isSafari() {
+            const ua = navigator.userAgent;
+            return /Safari/.test(ua) && !/Chrome/.test(ua) && !/OPR/.test(ua) && !/Edge/.test(ua);
+        }
+
+        // Show install modal on page load
+        window.addEventListener('load', () => {
+            const hasBeenDismissed = localStorage.getItem('installDismissed');
+            
+            if (isSafari()) {
+                // Safari: Show instructions only
+                installModalBtn.style.display = 'none';
+                safariInstructions.style.display = 'block';
+                installTitle.textContent = 'Install Loadr on Safari';
+                installDesc.textContent = 'Add this app to your home screen for quick access';
+                if (!hasBeenDismissed) {
+                    installModal.classList.add('show');
+                }
+            } else {
+                // Chrome/Chromium: Wait for beforeinstallprompt
+                safariInstructions.style.display = 'none';
+                // Modal will show when beforeinstallprompt fires
+            }
+        });
+
+        // Show install prompt when it's available (Chrome/Chromium only)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -973,7 +1011,7 @@
             installModal.classList.add('show');
         });
 
-        // Handle install button click
+        // Handle install button click (Chrome/Chromium)
         installModalBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -988,12 +1026,14 @@
         // Handle dismiss/maybe later click
         dismissInstallBtn.addEventListener('click', () => {
             installModal.classList.remove('show');
+            localStorage.setItem('installDismissed', 'true');
         });
 
         // Hide modal when installed
         window.addEventListener('appinstalled', () => {
             installModal.classList.remove('show');
             deferredPrompt = null;
+            localStorage.setItem('installDismissed', 'true');
             console.log('PWA installed successfully');
         });
         

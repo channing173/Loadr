@@ -390,112 +390,9 @@
             font-size: 18px;
             font-weight: bold;
         }
-
-        /* Install Modal */
-        .install-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .install-modal.show {
-            display: flex;
-        }
-
-        .install-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .install-icon {
-            font-size: 70px;
-            margin-bottom: 20px;
-        }
-
-        .install-card h2 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .install-card p {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-
-        .install-btn-container {
-            display: flex;
-            gap: 10px;
-        }
-
-        .install-primary-btn {
-            flex: 1;
-            padding: 12px 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .install-primary-btn:hover {
-            background: #45a049;
-        }
-
-        .install-secondary-btn {
-            flex: 1;
-            padding: 12px 20px;
-            background: transparent;
-            color: #4CAF50;
-            border: 2px solid #4CAF50;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .install-secondary-btn:hover {
-            background: rgba(76, 175, 80, 0.1);
-        }
     </style>
 </head>
 <body>
-    <!-- Install Modal -->
-    <div class="install-modal" id="installModal">
-        <div class="install-card">
-            <div class="install-icon">⚖️</div>
-            <h2 id="installTitle">Install Loadr</h2>
-            <p id="installDesc">Get quick access from your home screen</p>
-            <div class="install-btn-container" id="installBtnContainer">
-                <button class="install-primary-btn" id="installModalBtn">Install</button>
-                <button class="install-secondary-btn" id="dismissInstallBtn">Maybe Later</button>
-            </div>
-            <div id="safariInstructions" style="display:none;text-align:left;margin-top:20px;padding:15px;background:#f5f5f5;border-radius:10px;font-size:14px;">
-                <p style="margin:0 0 10px 0;font-weight:bold;color:#333">On Safari:</p>
-                <ol style="margin:0;padding-left:20px;color:#666">
-                    <li>Tap the Share button (↗️)</li>
-                    <li>Scroll down and tap "Add to Home Screen"</li>
-                    <li>Tap "Add" in the top right</li>
-                </ol>
-            </div>
-        </div>
-    </div>
-
     <div class="app-title" id="app-title">Loadr <span id="app-version">v0.83</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
@@ -967,93 +864,10 @@
             button.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
         });
         
-        // PWA Install Modal Logic
-        let deferredPrompt;
-        const installModal = document.getElementById('installModal');
-        const installModalBtn = document.getElementById('installModalBtn');
-        const dismissInstallBtn = document.getElementById('dismissInstallBtn');
-        const safariInstructions = document.getElementById('safariInstructions');
-        const installBtnContainer = document.getElementById('installBtnContainer');
-        const installTitle = document.getElementById('installTitle');
-        const installDesc = document.getElementById('installDesc');
-
-        // Detect if browser is Safari
-        function isSafari() {
-            const ua = navigator.userAgent;
-            return /Safari/.test(ua) && !/Chrome/.test(ua) && !/OPR/.test(ua) && !/Edge/.test(ua);
-        }
-
-        // Show install modal on page load
-        window.addEventListener('load', () => {
-            const hasBeenDismissed = localStorage.getItem('installDismissed');
-            
-            if (isSafari()) {
-                // Safari: Show instructions only
-                installModalBtn.style.display = 'none';
-                safariInstructions.style.display = 'block';
-                installTitle.textContent = 'Install Loadr on Safari';
-                installDesc.textContent = 'Add this app to your home screen for quick access';
-                if (!hasBeenDismissed) {
-                    installModal.classList.add('show');
-                }
-            } else {
-                // Chrome/Chromium: Wait for beforeinstallprompt
-                safariInstructions.style.display = 'none';
-                // Modal will show when beforeinstallprompt fires
-            }
-        });
-
-        // Show install prompt when it's available (Chrome/Chromium only)
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Show the install modal
-            installModal.classList.add('show');
-        });
-
-        // Handle install button click (Chrome/Chromium)
-        installModalBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                try {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`User response: ${outcome}`);
-                } catch (error) {
-                    console.log('Install prompt error:', error);
-                }
-                // Hide modal either way
-                installModal.classList.remove('show');
-                deferredPrompt = null;
-            }
-        });
-
-        // Handle dismiss/maybe later click
-        dismissInstallBtn.addEventListener('click', () => {
-            installModal.classList.remove('show');
-            localStorage.setItem('installDismissed', 'true');
-            deferredPrompt = null;
-        });
-
-        // Hide modal when installed
-        window.addEventListener('appinstalled', () => {
-            installModal.classList.remove('show');
-            deferredPrompt = null;
-            localStorage.setItem('installDismissed', 'true');
-            console.log('PWA installed successfully');
-        });
-        
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                // Clear old service workers to prevent conflicts
-                for (let registration of registrations) {
-                    if (registration.scope !== window.location.origin + '/') {
-                        registration.unregister();
-                    }
-                }
-            });
-
-            navigator.serviceWorker.register('./service-worker.js').then(registration => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(registration => {
                     console.log('Service Worker registered');
                     
                     // Check for updates every time the page loads
@@ -1080,7 +894,8 @@
                             }
                         });
                     });
-                }).catch(error => console.log('Service Worker registration failed:', error));
+                })
+                .catch(error => console.log('Service Worker registration failed:', error));
         }
         
         // Allow Enter key to trigger conversion

@@ -1014,9 +1014,13 @@
         // Handle install button click (Chrome/Chromium)
         installModalBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response: ${outcome}`);
+                try {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response: ${outcome}`);
+                } catch (error) {
+                    console.log('Install prompt error:', error);
+                }
                 // Hide modal either way
                 installModal.classList.remove('show');
                 deferredPrompt = null;
@@ -1027,6 +1031,7 @@
         dismissInstallBtn.addEventListener('click', () => {
             installModal.classList.remove('show');
             localStorage.setItem('installDismissed', 'true');
+            deferredPrompt = null;
         });
 
         // Hide modal when installed
@@ -1039,8 +1044,16 @@
         
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(registration => {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                // Clear old service workers to prevent conflicts
+                for (let registration of registrations) {
+                    if (registration.scope !== window.location.origin + '/') {
+                        registration.unregister();
+                    }
+                }
+            });
+
+            navigator.serviceWorker.register('./service-worker.js').then(registration => {
                     console.log('Service Worker registered');
                     
                     // Check for updates every time the page loads
@@ -1067,8 +1080,7 @@
                             }
                         });
                     });
-                })
-                .catch(error => console.log('Service Worker registration failed:', error));
+                }).catch(error => console.log('Service Worker registration failed:', error));
         }
         
         // Allow Enter key to trigger conversion

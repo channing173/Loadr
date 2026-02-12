@@ -1647,7 +1647,7 @@
             }
             
             // Calculate plates needed for a given weight
-            function calculatePlateDisplay(inputWeight, unit, exerciseName = '', subtractBar = true) {
+            function calculatePlateDisplay(inputWeight, unit, exerciseName = '', subtractBar = true, barWeight = null) {
                 let number = inputWeight;
                 const originalWeight = number;
                 const displayUnit = unit;
@@ -1660,14 +1660,19 @@
                 // Only subtract barbell weight if this is a barbell exercise
                 const isBarbell = exerciseName.toLowerCase().includes('barbell');
                 if (subtractBar && isBarbell) {
-                    try {
-                        if (document.getElementById('bar-45') && document.getElementById('bar-45').checked) {
-                            // subtract 45 lb bar (number is in lbs)
-                            number -= 45;
-                        } else if (document.getElementById('bar-55') && document.getElementById('bar-55').checked) {
-                            number -= 55;
-                        }
-                    } catch (e) { /* ignore DOM access errors */ }
+                    // If barWeight is explicitly provided, use it; otherwise check DOM
+                    if (barWeight !== null) {
+                        number -= barWeight;
+                    } else {
+                        try {
+                            if (document.getElementById('bar-45') && document.getElementById('bar-45').checked) {
+                                // subtract 45 lb bar (number is in lbs)
+                                number -= 45;
+                            } else if (document.getElementById('bar-55') && document.getElementById('bar-55').checked) {
+                                number -= 55;
+                            }
+                        } catch (e) { /* ignore DOM access errors */ }
+                    }
                 }
 
                 // Calculate weights based on unit system
@@ -2078,9 +2083,9 @@
                             // For regular exercises: show weight x reps format
                             html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
-                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:70px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:55px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:55px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
@@ -2136,7 +2141,7 @@
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                             html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="number" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
@@ -2308,9 +2313,33 @@
                             }
                         }
                         
+                        // Determine initial bar weight (default to 45 lbs)
+                        let currentBarWeight = 45;
+                        try {
+                            if (document.getElementById('bar-55') && document.getElementById('bar-55').checked) {
+                                currentBarWeight = 55;
+                            }
+                        } catch (e) { /* use default */ }
+                        
                         // Update plate display with current weight
                         if (weight > 0) {
-                            plateDisplay.innerHTML = calculatePlateDisplay(weight, globalUnit, exerciseName);
+                            let plateHTML = calculatePlateDisplay(weight, globalUnit, exerciseName, true, currentBarWeight);
+                            
+                            // Add bar weight toggle button if this is a barbell exercise
+                            if (exerciseName.toLowerCase().includes('barbell')) {
+                                const buttonBg = currentBarWeight === 45 ? '#808080' : '#4CAF50';
+                                plateHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${currentBarWeight})" style="padding:4px 8px;border:none;border-radius:4px;background:${buttonBg};color:white;cursor:pointer;font-weight:bold">${currentBarWeight} lbs</button></div>` + plateHTML;
+                            }
+                            
+                            plateDisplay.innerHTML = plateHTML;
+                            plateDisplay.dataset.currentBarWeight = currentBarWeight;
+                            plateDisplay.dataset.exerciseName = exerciseName;
+                            plateDisplay.dataset.weight = weight;
+                            plateDisplay.dataset.key = key;
+                            plateDisplay.dataset.weekNum = weekNum;
+                            plateDisplay.dataset.dayIdx = dayIdx;
+                            plateDisplay.dataset.exIdx = exIdx;
+                            plateDisplay.dataset.setNum = setNum;
                         }
                         
                         plateDisplay.style.display = 'block';
@@ -2328,6 +2357,37 @@
                         }
                     }
                 }
+            }
+            
+            function updateBarWeightInPlateDisplay(button, weekNum, dayIdx, exIdx, setNum, key, currentBarWeight) {
+                const plateDisplay = document.getElementById(`plate-display-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
+                if (!plateDisplay) return;
+                
+                // Toggle bar weight
+                const newBarWeight = currentBarWeight === 45 ? 55 : 45;
+                
+                // Get stored values
+                const weight = parseFloat(plateDisplay.dataset.weight);
+                const exerciseName = plateDisplay.dataset.exerciseName;
+                
+                // Recalculate plates with new bar weight
+                const plateHTML = calculatePlateDisplay(weight, globalUnit, exerciseName, true, newBarWeight);
+                
+                // Update button and content
+                button.textContent = `${newBarWeight} lbs`;
+                
+                // Replace just the plate content (everything after the button row)
+                const containerDiv = plateDisplay.firstElementChild;
+                if (containerDiv) {
+                    containerDiv.nextElement?.remove();
+                }
+                
+                // Rebuild HTML with button and plates
+                const newButtonBg = newBarWeight === 45 ? '#808080' : '#4CAF50';
+                let fullHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${newBarWeight})" style="padding:4px 8px;border:none;border-radius:4px;background:${newButtonBg};color:white;cursor:pointer;font-weight:bold">${newBarWeight} lbs</button></div>` + plateHTML;
+                
+                plateDisplay.innerHTML = fullHTML;
+                plateDisplay.dataset.currentBarWeight = newBarWeight;
             }
 
             function completeSet(key, weekNum, dayIdx, exIdx, setNum) {

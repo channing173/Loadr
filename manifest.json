@@ -1,7 +1,7 @@
 {
-  "name": "Weight Converter",
-  "short_name": "WeightConv",
-  "description": "Convert barbell weights to plate combinations",
+  "name": "Loadr",
+  "short_name": "Loadr",
+  "description": "Simple plate calculator and workout planner PWA.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

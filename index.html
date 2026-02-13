@@ -393,7 +393,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.85</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.86</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -429,7 +429,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.85</div>
+        <div class="menu-version" id="menu-version">v0.86</div>
     </div>
     
     <div class="container">
@@ -603,6 +603,24 @@
                         }
                     });
                     saveWorkoutWeights();
+                }
+            } catch (e) { /* ignore */ }
+
+            // Convert 1RM values to the new unit
+            try {
+                const keys = Object.keys(oneRepMaxes);
+                if (keys.length > 0) {
+                    keys.forEach(k => {
+                        const val = parseFloat(oneRepMaxes[k]);
+                        if (!isNaN(val)) {
+                            if (previousUnit === 'lbs' && globalUnit === 'kg') {
+                                oneRepMaxes[k] = Math.round(val * 0.453592);
+                            } else if (previousUnit === 'kg' && globalUnit === 'lbs') {
+                                oneRepMaxes[k] = Math.round(val * 2.20462);
+                            }
+                        }
+                    });
+                    saveOneRepMaxes();
                 }
             } catch (e) { /* ignore */ }
 
@@ -830,8 +848,21 @@
         // Reset app to initial state
         function resetApp() {
             if (confirm('Are you sure you want to reset the app? This will clear all your data and return it to the initial state.')) {
-                // Clear all localStorage items
-                localStorage.clear();
+                // Save current theme preference before clearing
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                
+                // Clear only workout-related localStorage items
+                localStorage.removeItem('workoutWeights');
+                localStorage.removeItem('exerciseReps');
+                localStorage.removeItem('oneRepMaxes');
+                localStorage.removeItem('completed1RMs');
+                localStorage.removeItem('completedExercises');
+                localStorage.removeItem('completedSets');
+                localStorage.removeItem('customPlan');
+                localStorage.removeItem('appState');
+                
+                // Restore theme preference
+                localStorage.setItem('theme', currentTheme);
                 
                 // Reset all state variables to initial values
                 currentProgram = null;
@@ -839,10 +870,13 @@
                 currentDay = null;
                 workoutWeights = {};
                 exerciseReps = {};
+                oneRepMaxes = {};
                 expandedExercises = new Set();
                 completedExercises = new Set();
                 completedSets = new Set();
+                completed1RMs = new Set();
                 customPlan = null;
+                globalUnit = 'lbs';
                 
                 // Close menu
                 toggleMenu();
@@ -1484,12 +1518,16 @@
             let workoutWeights = {};
             // Store reps for exercises per week: exerciseReps[key:weekNum] = reps value
             let exerciseReps = {};
+            // Store 1RM for powerlifting exercises: oneRepMaxes[exerciseKey] = 1RM value
+            let oneRepMaxes = {};
             // Track which exercise detail panels are expanded: entries like "program:week:day:exIdx"
             let expandedExercises = new Set();
             // Track completed exercises (entries like "program:week:day:exIdx")
             let completedExercises = new Set();
             // Track completed individual sets (entries like "program:week:day:exIdx:setNum")
             let completedSets = new Set();
+            // Track completed 1RMs (entries like "program:exerciseName")
+            let completed1RMs = new Set();
             // Custom plan storage: { numDays, weeks: [ { num: 1, days: [...] }, ... ] }
             let customPlan = null;
             
@@ -1517,6 +1555,33 @@
             // Save reps to localStorage
             function saveExerciseReps() {
                 localStorage.setItem('exerciseReps', JSON.stringify(exerciseReps));
+            }
+            
+            // Load 1RM from localStorage
+            function loadOneRepMaxes() {
+                const saved = localStorage.getItem('oneRepMaxes');
+                if (saved) {
+                    oneRepMaxes = JSON.parse(saved);
+                }
+            }
+            
+            // Save 1RM to localStorage
+            function saveOneRepMaxes() {
+                localStorage.setItem('oneRepMaxes', JSON.stringify(oneRepMaxes));
+            }
+            
+            // Load completed 1RMs from localStorage
+            function loadCompleted1RMs() {
+                const saved = localStorage.getItem('completed1RMs');
+                if (saved) {
+                    const arr = JSON.parse(saved);
+                    completed1RMs = new Set(arr);
+                }
+            }
+            
+            // Save completed 1RMs to localStorage
+            function saveCompleted1RMs() {
+                localStorage.setItem('completed1RMs', JSON.stringify(Array.from(completed1RMs)));
             }
             
             // Calculate average of reps values (array of "8", "7", "8" -> average as number)
@@ -1644,6 +1709,70 @@
             // Create a unique key for each exercise
             function getExerciseKey(program, exerciseName) {
                 return `${program}:${exerciseName}`;
+            }
+            
+            // Save 1RM for an exercise
+            function save1RM(exerciseKey, value) {
+                if (value && value.trim()) {
+                    oneRepMaxes[exerciseKey] = parseFloat(value);
+                } else {
+                    if (exerciseKey in oneRepMaxes) {
+                        delete oneRepMaxes[exerciseKey];
+                    }
+                }
+                saveOneRepMaxes();
+            }
+            
+            // Mark 1RM as complete
+            function complete1RM(exerciseKey) {
+                if (completed1RMs.has(exerciseKey)) {
+                    completed1RMs.delete(exerciseKey);
+                } else {
+                    completed1RMs.add(exerciseKey);
+                }
+                saveCompleted1RMs();
+                // Re-render the exercise detail to update button styling
+                const currentExerciseId = document.querySelector('[id^="1rm-input-"]');
+                if (currentExerciseId) {
+                    const match = currentExerciseId.id.match(/1rm-input-(.*)/);
+                    if (match) {
+                        const key = match[1].split(':')[0];
+                        const programKey = key;
+                        // Find the exercise in the current program
+                        const plan = (programKey === 'custom') ? customPlan : workoutPlans[programKey];
+                        if (plan && currentProgram) {
+                            const weekNum = currentWeek;
+                            const dayIdx = currentDay;
+                            const exIdx = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises.findIndex(e => getExerciseKey(programKey, e.name) === exerciseKey);
+                            if (exIdx >= 0) {
+                                showExercise(null, programKey, weekNum, dayIdx, exIdx, true);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Get powerlifting parameters (weight % and reps) for a given week and set
+            function getPowerLiftingParams(weekNum, setNum) {
+                const params = {
+                    1: { 1: { percent: 0.65, reps: 5 }, 2: { percent: 0.75, reps: 5 }, 3: { percent: 0.85, reps: 5 } },
+                    2: { 1: { percent: 0.70, reps: 3 }, 2: { percent: 0.80, reps: 3 }, 3: { percent: 0.90, reps: 3 } },
+                    3: { 1: { percent: 0.75, reps: 5 }, 2: { percent: 0.85, reps: 3 }, 3: { percent: 0.95, reps: 1 } },
+                    4: { 1: { percent: 0.40, reps: 5 }, 2: { percent: 0.50, reps: 5 }, 3: { percent: 0.60, reps: 5 } }
+                };
+                return params[weekNum] && params[weekNum][setNum] ? params[weekNum][setNum] : null;
+            }
+            
+            // Round weight to nearest plate increment
+            function roundToNearestPlateIncrement(weight, unit) {
+                // For lbs: round to nearest 10 (5 per side)
+                // For kg: round to nearest 5 (2.5 per side)
+                if (unit === 'kg') {
+                    return Math.round(weight / 5) * 5;
+                } else {
+                    // lbs
+                    return Math.round(weight / 10) * 10;
+                }
             }
             
             // Calculate plates needed for a given weight
@@ -1868,6 +1997,28 @@
                         }
                         processedExercises.add(exerciseKey);
                         
+                        // For powerlifting exercises with 1RM, increase the 1RM
+                        if (key === 'power') {
+                            const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
+                            if (powerLiftingExercises.includes(ex.name) && oneRepMaxes[exerciseKey]) {
+                                // Determine increment based on exercise type
+                                const lowerBodyExercises = ['Barbell Squat', 'Barbell Deadlift'];
+                                const increment = lowerBodyExercises.includes(ex.name) ? 10 : 5;
+                                
+                                // Increase 1RM by increment
+                                const oldOneRM = oneRepMaxes[exerciseKey];
+                                const newOneRM = oldOneRM + increment;
+                                oneRepMaxes[exerciseKey] = newOneRM;
+                                
+                                // Mark 1RM as completed
+                                completed1RMs.add(exerciseKey);
+                                
+                                count++;
+                                // Continue to next exercise (don't process weight-based logic for powerlifting with 1RM)
+                                return;
+                            }
+                        }
+                        
                         let baseWeight = workoutWeights[exerciseKey];
                         
                         // If no base weight, find the maximum weight from per-set weights
@@ -1949,6 +2100,8 @@
                 
                 saveWorkoutWeights();
                 saveExerciseReps();
+                saveOneRepMaxes();
+                saveCompleted1RMs();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
                 // Clear all completion progress when exporting week 4 to week 1
                 completedExercises.clear();
@@ -2061,17 +2214,50 @@
                 
                 // Handle weight and reps display inline
                 if (weekNum === 1) {
+                    // Check if this is a powerlifting key exercise that needs 1RM input
+                    const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
+                    if (key === 'power' && powerLiftingExercises.includes(ex.name)) {
+                        // Add 1RM input for powerlifting exercises
+                        const stored1RM = oneRepMaxes[exerciseKey];
+                        const oneRepMaxValue = stored1RM ? stored1RM.toFixed(1).replace(/\.0$/, '') : '';
+                        const is1RMDone = completed1RMs.has(exerciseKey);
+                        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
+                        html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px;display:inline-block">1RM:</span>`;
+                        html += `<input type="number" id="1rm-input-${exerciseKey}" value="${oneRepMaxValue}" placeholder="1RM" step="0.1" style="width:55px;margin-left:4px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${is1RMDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${is1RMDone ? 'disabled' : ''} onchange="save1RM('${exerciseKey}', this.value)">`;
+                        html += `<span style="font-weight:bold;color:var(--text-color)">${globalUnit}</span>`;
+                        html += `<button onclick="complete1RM('${exerciseKey}')" style="min-height:32px;padding:6px 10px;background:${is1RMDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                        html += `</div>`;
+                    }
+                    
                     // Week 1: Generate rows for each set
                     const isCardioOrStretching = ex.name === "Light Cardio" || ex.name === "Stretching";
+                    const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(ex.name);
+                    const oneRM = oneRepMaxes[exerciseKey];
                     
                     for (let setNum = 1; setNum <= ex.sets; setNum++) {
                         const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
                         const isSetDone = completedSets.has(setId);
-                        const storedWeight = workoutWeights[`${exerciseKey}:${setNum}`];
-                        const defaultValue = storedWeight ? storedWeight.toFixed(1).replace(/\.0$/, '') : '';
+                        
+                        // For powerlifting with 1RM, calculate weight from 1RM
+                        let calculatedWeight = null;
+                        let calculatedReps = null;
+                        if (isPowerLiftingEx && oneRM) {
+                            const params = getPowerLiftingParams(weekNum, setNum);
+                            if (params) {
+                                const rawWeight = oneRM * params.percent;
+                                calculatedWeight = roundToNearestPlateIncrement(rawWeight, globalUnit);
+                                calculatedReps = params.reps;
+                            }
+                        }
+                        
+                        // Use calculated values if available, otherwise use stored
+                        const storedWeight = !calculatedWeight ? workoutWeights[`${exerciseKey}:${setNum}`] : null;
+                        const defaultWeightValue = calculatedWeight ? calculatedWeight.toString() : (storedWeight ? storedWeight.toFixed(1).replace(/\.0$/, '') : '');
+                        const isWeightDisabled = calculatedWeight !== null || isSetDone;
                         
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                        const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                        const storedSetReps = calculatedReps ? calculatedReps : (exerciseReps[setRepsKey] || displayReps);
+                        const isRepsDisabled = calculatedReps !== null || isSetDone;
                         
                         if (isCardioOrStretching) {
                             // For cardio/stretching: only show reps and check button
@@ -2083,9 +2269,9 @@
                             // For regular exercises: show weight x reps format
                             html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
-                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultValue}" placeholder="Weight" step="0.1" style="width:55px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultWeightValue}" placeholder="Weight" step="0.1" style="width:55px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isWeightDisabled ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isWeightDisabled ? 'disabled' : ''}>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:55px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:55px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isRepsDisabled ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isRepsDisabled ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
@@ -2100,46 +2286,29 @@
                     
                 } else {
                     // Weeks 2-4: Show per-set rows with calculated weight
-                    // For weeks 2+, use the highest weight from week 1 as the base
-                    let baseWeight = workoutWeights[exerciseKey];
+                    const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
+                    const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(ex.name);
+                    const oneRM = oneRepMaxes[exerciseKey];
                     
-                    if (!baseWeight) {
-                        // If no base weight, find the maximum weight from per-set weights
-                        let maxWeight = 0;
-                        for (let s = 1; s <= ex.sets; s++) {
-                            const setWeight = workoutWeights[`${exerciseKey}:${s}`];
-                            if (setWeight && setWeight > maxWeight) {
-                                maxWeight = setWeight;
-                            }
-                        }
-                        if (maxWeight > 0) {
-                            baseWeight = maxWeight;
-                        }
-                    }
-                    
-                    if (baseWeight) {
-                        const weekMultiplier = weekNum - 1;
-                        // Use custom increment for custom exercises, otherwise use unit-based increment
-                        let increment;
-                        if (ex.increment !== undefined) {
-                            // Always treat increment as lbs, convert if needed
-                            increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
-                        } else {
-                            increment = (globalUnit === 'kg') ? 2.5 : 5;
-                        }
-                        const calculatedWeight = baseWeight + (weekMultiplier * increment);
-                        
-                        // Generate rows for each set
+                    if (isPowerLiftingEx && oneRM) {
+                        // For powerlifting exercises with 1RM set, use percentages for each set
                         for (let setNum = 1; setNum <= ex.sets; setNum++) {
                             const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
                             const isSetDone = completedSets.has(setId);
                             
+                            const params = getPowerLiftingParams(weekNum, setNum);
+                            if (!params) continue;
+                            
+                            const setWeight = oneRM * params.percent;
+                            const roundedSetWeight = roundToNearestPlateIncrement(setWeight, globalUnit);
+                            const setReps = params.reps;
+                            
                             const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                            const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                            const storedSetReps = exerciseReps[setRepsKey] || setReps;
                             
                             html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
-                            html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
+                            html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${roundedSetWeight}</div>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
                             html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
@@ -2153,7 +2322,60 @@
                             html += `</div>`;
                         }
                     } else {
-                        html += `<div style="margin-top:10px;color:var(--text-color)">Set weight in Week 1 to see progression</div>`;
+                        // For non-powerlifting exercises or when no 1RM is set, use increment-based calculation
+                        // For weeks 2+, use the highest weight from week 1 as the base
+                        let baseWeight = workoutWeights[exerciseKey];
+                        
+                        if (!baseWeight) {
+                            // If no base weight, find the maximum weight from per-set weights
+                            let maxWeight = 0;
+                            for (let s = 1; s <= ex.sets; s++) {
+                                const setWeight = workoutWeights[`${exerciseKey}:${s}`];
+                                if (setWeight && setWeight > maxWeight) {
+                                    maxWeight = setWeight;
+                                }
+                            }
+                            if (maxWeight > 0) {
+                                baseWeight = maxWeight;
+                            }
+                        }
+                        
+                        if (baseWeight) {
+                            const weekMultiplier = weekNum - 1;
+                            // Use custom increment for custom exercises, otherwise use unit-based increment
+                            let increment;
+                            if (ex.increment !== undefined) {
+                                // Always treat increment as lbs, convert if needed
+                                increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
+                            } else {
+                                increment = (globalUnit === 'kg') ? 2.5 : 5;
+                            }
+                            const calculatedWeight = baseWeight + (weekMultiplier * increment);
+                            
+                            // Generate rows for each set
+                            for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
+                                const isSetDone = completedSets.has(setId);
+                                
+                                const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
+                                const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                                
+                                html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
+                                html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
+                                html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
+                                html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
+                                html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                                html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
+                                
+                                // Add plate button for barbell exercises
+                                if (ex.name.toLowerCase().includes('barbell')) {
+                                    html += `<button id="plate-btn-${weekNum}-${dayIdx}-${exIdx}-${setNum}" onclick="togglePlateDisplay('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="display:flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;background:#888888;color:white;border:none;border-radius:4px;cursor:pointer" title="Toggle plate display"><svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/></svg></button>`;
+                                    html += `<div id="plate-display-${weekNum}-${dayIdx}-${exIdx}-${setNum}" style="display:none;flex-basis:100%;margin-top:8px;padding:10px;background:var(--container-bg);border-radius:4px"></div>`;
+                                }
+                                
+                                html += `</div>`;
+                            }
+                        }
                     }
                 }
                 
@@ -2282,34 +2504,50 @@
                         if (weekNum === 1) {
                             // For week 1, get the weight from the input
                             const weightInput = document.getElementById(`weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
-                            weight = weightInput ? parseFloat(weightInput.value) : 0;
+                            const rawWeight = weightInput ? parseFloat(weightInput.value) : 0;
+                            weight = rawWeight > 0 ? roundToNearestPlateIncrement(rawWeight, globalUnit) : 0;
                         } else {
-                            // For weeks 2-4, calculate the weight
-                            let baseWeight = workoutWeights[exerciseKey];
+                            // For weeks 2-4, check if this is a powerlifting exercise with 1RM
+                            const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
+                            const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(exerciseName);
+                            const oneRM = oneRepMaxes[exerciseKey];
                             
-                            if (!baseWeight) {
-                                // If no base weight, find the maximum weight from per-set weights
-                                let maxWeight = 0;
-                                for (let s = 1; s <= ex.sets; s++) {
-                                    const setWeight = workoutWeights[`${exerciseKey}:${s}`];
-                                    if (setWeight && setWeight > maxWeight) {
-                                        maxWeight = setWeight;
+                            if (isPowerLiftingEx && oneRM) {
+                                // For powerlifting with 1RM, use percentages
+                                const params = getPowerLiftingParams(weekNum, setNum);
+                                if (params) {
+                                    const calculatedWeight = oneRM * params.percent;
+                                    weight = roundToNearestPlateIncrement(calculatedWeight, globalUnit);
+                                }
+                            } else {
+                                // For non-powerlifting exercises or when no 1RM is set, use increment-based calculation
+                                let baseWeight = workoutWeights[exerciseKey];
+                                
+                                if (!baseWeight) {
+                                    // If no base weight, find the maximum weight from per-set weights
+                                    let maxWeight = 0;
+                                    for (let s = 1; s <= ex.sets; s++) {
+                                        const setWeight = workoutWeights[`${exerciseKey}:${s}`];
+                                        if (setWeight && setWeight > maxWeight) {
+                                            maxWeight = setWeight;
+                                        }
+                                    }
+                                    if (maxWeight > 0) {
+                                        baseWeight = maxWeight;
                                     }
                                 }
-                                if (maxWeight > 0) {
-                                    baseWeight = maxWeight;
+                                
+                                if (baseWeight) {
+                                    let increment;
+                                    if (ex.increment !== undefined) {
+                                        increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
+                                    } else {
+                                        increment = (globalUnit === 'kg') ? 2.5 : 5;
+                                    }
+                                    const weekMultiplier = weekNum - 1;
+                                    const calculatedWeight = baseWeight + (weekMultiplier * increment);
+                                    weight = roundToNearestPlateIncrement(calculatedWeight, globalUnit);
                                 }
-                            }
-                            
-                            if (baseWeight) {
-                                let increment;
-                                if (ex.increment !== undefined) {
-                                    increment = (globalUnit === 'kg') ? +(ex.increment * 0.453592).toFixed(1) : ex.increment;
-                                } else {
-                                    increment = (globalUnit === 'kg') ? 2.5 : 5;
-                                }
-                                const weekMultiplier = weekNum - 1;
-                                weight = baseWeight + (weekMultiplier * increment);
                             }
                         }
                         
@@ -2875,6 +3113,8 @@
                 // Load saved weights and completed state
                 loadWorkoutWeights();
                 loadExerciseReps();
+                loadOneRepMaxes();
+                loadCompleted1RMs();
                 loadCompletedExercises();
                 loadCompletedSets();
                 loadCustomPlan();

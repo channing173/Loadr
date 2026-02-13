@@ -5,9 +5,9 @@ const urlsToCache = [
   './peter.jpeg'
 ];
 
-// Helper to get active cache name (fallback to v0.88, must match version.json)
+// Helper to get active cache name (fallback to v0.9, must match version.json)
 function currentCacheName() {
-  return self.CACHE_NAME || 'weight-converter-v0.88';
+  return self.CACHE_NAME || 'weight-converter-v0.9';
 }
 
 // Install service worker — read version.json to choose cache name
@@ -23,8 +23,8 @@ self.addEventListener('install', event => {
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })
       .catch(() => {
-        // fallback to v0.88 (must match version.json)
-        const CACHE_NAME = 'weight-converter-v0.88';
+        // fallback to v0.9 (must match version.json)
+        const CACHE_NAME = 'weight-converter-v0.9';
         self.CACHE_NAME = CACHE_NAME;
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })

@@ -76,7 +76,7 @@
             background: none;
             border: none;
             color: var(--text-color);
-            padding: 15px;
+            padding: 7.5px 15px;
             cursor: pointer;
             font-size: 16px;
             width: 100%;
@@ -92,7 +92,7 @@
             background: none;
             border: none;
             color: var(--text-color);
-            padding: 15px;
+            padding: 7.5px 15px;
             cursor: pointer;
             font-size: 16px;
             width: 100%;
@@ -167,22 +167,30 @@
             position: fixed;
             top: 12px;
             right: 16px;
-            background: none;
-            border: none;
+            background: transparent !important;
+            border: none !important;
             cursor: pointer;
             padding: 10px;
             z-index: 1100;
             transition: transform 0.22s ease;
             will-change: transform;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
         .hamburger:focus,
         .hamburger:active,
         .hamburger:focus-visible {
-            outline: none;
-            background: none;
+            outline: none !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .hamburger:hover {
+            background: transparent !important;
         }
         
         .app-title {
@@ -393,7 +401,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.88</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.9</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -429,26 +437,21 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.88</div>
+        <div class="menu-version" id="menu-version">v0.9</div>
     </div>
     
     <div class="container">
         <!-- Workout Planner Page -->
         <div id="workout-page" class="page active">
             <h1>Workout Planner</h1>
-            <div class="choices" role="tablist">
-                <div class="choice" id="power" role="tab" tabindex="0" onclick="selectProgram('power')">
-                    <strong>Powerlifting</strong>
-                </div>
-                <div class="choice" id="body" role="tab" tabindex="0" onclick="selectProgram('body')">
-                    <strong>Bodybuilding</strong>
-                </div>
-                <div class="choice" id="general" role="tab" tabindex="0" onclick="selectProgram('general')">
-                    <strong>General Health</strong>
-                </div>
-                <div class="choice" id="custom" role="tab" tabindex="0" onclick="selectProgram('custom')">
-                    <strong>Custom</strong>
-                </div>
+            <div style="margin-bottom:10px">
+                <select id="program-select" onchange="selectProgram(this.value)" style="width:100%;padding:12px 12px 12px 12px;padding-right:40px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:16px;font-weight:bold;cursor:pointer;appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 12 12%22><path fill=%22%23666%22 d=%22M3 4l3 3 3-3z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;background-size:16px">
+                    <option value="power">Powerlifting</option>
+                    <option value="body">Bodybuilding</option>
+                    <option value="general">General Health</option>
+                    <option value="custom">Custom</option>
+                    <option value="descriptions">Plan Descriptions</option>
+                </select>
             </div>
 
             <div id="plan" class="plan">Select a program to see a sample 4-week outline.</div>
@@ -485,6 +488,42 @@
             </div>
             
             <div class="results" id="unit-results"></div>
+        </div>
+        
+        <!-- Plan Descriptions Page -->
+        <div id="descriptions-page" class="page">
+            <h1>Workout Planner</h1>
+            <div style="margin-bottom:5px">
+                <select id="program-select-desc" onchange="selectProgramDesc(this.value)" style="width:100%;padding:12px 12px 12px 12px;padding-right:40px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:16px;font-weight:bold;cursor:pointer;appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 12 12%22><path fill=%22%23666%22 d=%22M3 4l3 3 3-3z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;background-size:16px">
+                    <option value="power">Powerlifting</option>
+                    <option value="body">Bodybuilding</option>
+                    <option value="general">General Health</option>
+                    <option value="custom">Custom</option>
+                    <option value="descriptions" selected>Plan Descriptions</option>
+                </select>
+            </div>
+            
+            <div style="padding:10px;">
+                <div style="margin-bottom:20px;">
+                    <h2 style="color:var(--text-color);margin-bottom:8px;">Powerlifting</h2>
+                    <p style="color:var(--text-color);line-height:1.6;">Focus on the big three lifts: Squat, Bench Press, and Deadlift. Uses periodized training with percentage-based formulas to build strength progressively over 4 weeks. Each lift has a one-rep max (1RM) that automatically increases by 5-10 lbs per cycle.</p>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <h2 style="color:var(--text-color);margin-bottom:8px;">Bodybuilding</h2>
+                    <p style="color:var(--text-color);line-height:1.6;">Designed for hypertrophy (muscle growth) with higher rep ranges and multiple exercises per muscle group. Includes progressive overload where weights increase automatically when you hit your target reps consistently over multiple weeks.</p>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <h2 style="color:var(--text-color);margin-bottom:8px;">General Health</h2>
+                    <p style="color:var(--text-color);line-height:1.6;">A balanced approach to fitness combining strength and conditioning. Moderate rep ranges with functional exercises that improve overall fitness, mobility, and well-being. Weights progress based on rep targets similar to Bodybuilding.</p>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <h2 style="color:var(--text-color);margin-bottom:8px;">Custom</h2>
+                    <p style="color:var(--text-color);line-height:1.6;">Create your own personalized workout plan. Define your exercises, rep ranges, and weight increments. Full flexibility to design a program tailored to your specific goals.</p>
+                </div>
+            </div>
         </div>
         
     </div>
@@ -728,6 +767,8 @@
                 if (lastUnitResults) {
                     document.getElementById('unit-results').innerHTML = lastUnitResults;
                 }
+            } else if (pageName === 'descriptions') {
+                document.getElementById('descriptions-page').classList.add('active');
             }
 
             if (closeMenu) toggleMenu();
@@ -1322,8 +1363,8 @@
                         { name: "Chest + Triceps", exercises: [
                             { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
-                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
+                            { name: "Chest Fly", sets: 3, reps: "10-12" },
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
                             { name: "Lat Pulldown", sets: 3, reps: "8-10" },
@@ -1350,8 +1391,8 @@
                         { name: "Chest + Triceps", exercises: [
                             { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
-                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
+                            { name: "Chest Fly", sets: 3, reps: "10-12" },
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
                             { name: "Lat Pulldown", sets: 3, reps: "8-10" },
@@ -1378,8 +1419,8 @@
                         { name: "Chest + Triceps", exercises: [
                             { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
-                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
+                            { name: "Chest Fly", sets: 3, reps: "10-12" },
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
                             { name: "Lat Pulldown", sets: 3, reps: "8-10" },
@@ -1406,8 +1447,8 @@
                         { name: "Chest + Triceps", exercises: [
                             { name: "Barbell Bench Press", sets: 3, reps: "8-10" },
                             { name: "Incline DB Press", sets: 3, reps: "8-10" },
-                            { name: "Tricep Dips", sets: 3, reps: "8-12" },
-                            { name: "Tricep Pushdown", sets: 3, reps: "8-12" }
+                            { name: "Chest Fly", sets: 3, reps: "10-12" },
+                            { name: "Tricep Dips", sets: 3, reps: "8-12" }
                         ]},
                         { name: "Back + Biceps", exercises: [
                             { name: "Lat Pulldown", sets: 3, reps: "8-10" },
@@ -1937,9 +1978,19 @@
             }
 
             function selectProgram(key) {
-                document.querySelectorAll('.choice').forEach(el => el.classList.remove('active'));
-                const el = document.getElementById(key);
-                if (el) el.classList.add('active');
+                // Update dropdown to reflect selected program
+                const select = document.getElementById('program-select');
+                if (select) select.value = key;
+                
+                // Handle descriptions page
+                if (key === 'descriptions') {
+                    showPage('descriptions', false);
+                    // Also update the descriptions page dropdown
+                    const selectDesc = document.getElementById('program-select-desc');
+                    if (selectDesc) selectDesc.value = 'descriptions';
+                    return;
+                }
+                
                 currentProgram = key;
                 currentWeek = null;
                 
@@ -1952,7 +2003,7 @@
                         if (!response) {
                             // User cancelled
                             currentProgram = null;
-                            document.getElementById('custom').classList.remove('active');
+                            if (select) select.value = '';
                             return;
                         }
                         const numDays = parseInt(response);
@@ -1970,6 +2021,51 @@
                 saveAppState();
             }
 
+            function selectProgramDesc(key) {
+                // Update dropdown on descriptions page
+                const select = document.getElementById('program-select-desc');
+                if (select) select.value = key;
+                
+                // Handle staying on descriptions page
+                if (key === 'descriptions') {
+                    return;
+                }
+                
+                // Navigate to selected program
+                currentProgram = key;
+                currentWeek = null;
+                
+                // Update both dropdowns
+                const mainSelect = document.getElementById('program-select');
+                if (mainSelect) mainSelect.value = key;
+                
+                // Handle custom plan creation
+                if (key === 'custom') {
+                    loadCustomPlan();
+                    if (!customPlan) {
+                        // Prompt for number of days
+                        const response = prompt('How many days per week?', '3');
+                        if (!response) {
+                            // User cancelled
+                            currentProgram = null;
+                            if (select) select.value = 'descriptions';
+                            return;
+                        }
+                        const numDays = parseInt(response);
+                        if (isNaN(numDays) || numDays < 1 || numDays > 7) {
+                            alert('Please enter a number between 1 and 7');
+                            selectProgramDesc('custom'); // Retry
+                            return;
+                        }
+                        createCustomPlan(numDays);
+                    }
+                }
+                
+                showPage('workout', false);
+                displayWeeks(key);
+                // Persist selected program
+                saveAppState();
+            }
             function displayWeeks(key) {
                 const planDiv = document.getElementById('plan');
                 const weeks = (key === 'custom') ? customPlan.weeks : workoutPlans[key].weeks;
@@ -2096,13 +2192,9 @@
                             }
                             const week4Weight = baseWeight + (increment * 3);
                             
-                            // Store week 4 weight only in first set of new week 1
-                            workoutWeights[`${exerciseKey}:1`] = week4Weight;
-                            
-                            // Clear all other per-set weights so user can enter new ones
-                            for (let setNum = 2; setNum <= ex.sets; setNum++) {
-                                const setWeightKey = `${exerciseKey}:${setNum}`;
-                                delete workoutWeights[setWeightKey];
+                            // Pre-fill all sets with the week 4 weight for new week 1
+                            for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                workoutWeights[`${exerciseKey}:${setNum}`] = week4Weight;
                             }
                             
                             // Don't store base weight - let the display logic find it from per-set weights
@@ -2311,9 +2403,8 @@
                         const isWeightDisabled = calculatedWeight !== null || isSetDone;
                         
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                        // For powerlifting with 1RM, display logged reps if available, otherwise formula reps
-                        // For other exercises, display stored reps or reps range
-                        const storedSetReps = calculatedReps ? (loggedReps[setRepsKey] || calculatedReps) : (exerciseReps[setRepsKey] || displayReps);
+                        // Display logged reps if available, otherwise prescribed reps
+                        const storedSetReps = calculatedReps ? (loggedReps[setRepsKey] || calculatedReps) : (loggedReps[setRepsKey] || displayReps);
                         // For powerlifting, reps are editable (for logging); for others, only if not disabled
                         const isRepsDisabled = (calculatedReps !== null && !isPowerLiftingEx) || isSetDone;
                         
@@ -2400,7 +2491,6 @@
                         }
                         
                         if (baseWeight) {
-                            const weekMultiplier = weekNum - 1;
                             // Use custom increment for custom exercises, otherwise use unit-based increment
                             let increment;
                             if (ex.increment !== undefined) {
@@ -2410,21 +2500,26 @@
                                 increment = (globalUnit === 'kg') ? 2.5 : 5;
                             }
                             
-                            // Calculate weight with progressive overload check
-                            let calculatedWeight = baseWeight + (weekMultiplier * increment);
-                            
-                            // For weeks 3+, check if previous week's reps target was met
-                            // (only for non-powerlifting exercises; powerlifting reps are for logging only)
+                            // Check if this is a powerlifting exercise
                             const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(ex.name);
-                            if (weekNum >= 3 && !isPowerLiftingEx) {
-                                // Get previous week's actual reps (use first set as reference for week-level reps)
-                                const prevWeekRepsKey = `${exerciseKey}:${weekNum - 1}:1`;
-                                const prevWeekActualReps = exerciseReps[prevWeekRepsKey];
-                                
-                                // Check if previous week reps met target
-                                if (prevWeekActualReps && !meetsRepTarget(prevWeekActualReps, displayReps)) {
-                                    // Rep target not met, use previous week's weight instead of incrementing
-                                    calculatedWeight = baseWeight + ((weekNum - 2) * increment);
+                            
+                            // Calculate weight with progressive overload check (week-by-week)
+                            // Build up the weight by checking each week's rep compliance
+                            let calculatedWeight = baseWeight;
+                            
+                            for (let w = 2; w <= weekNum; w++) {
+                                // Check if previous week's reps were met
+                                if (!isPowerLiftingEx) {
+                                    const prevWeekRepsKey = `${exerciseKey}:${w - 1}:1`;
+                                    const prevWeekActualReps = loggedReps[prevWeekRepsKey];
+                                    if (prevWeekActualReps && meetsRepTarget(prevWeekActualReps, ex.reps)) {
+                                        // Reps were met, increment
+                                        calculatedWeight += increment;
+                                    }
+                                    // else: reps not met, don't increment (stay at same weight)
+                                } else {
+                                    // For powerlifting exercises using increment logic (no 1RM), always increment
+                                    calculatedWeight += increment;
                                 }
                             }
                             
@@ -2434,7 +2529,8 @@
                                 const isSetDone = completedSets.has(setId);
                                 
                                 const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                                const storedSetReps = exerciseReps[setRepsKey] || displayReps;
+                                // For non-powerlifting exercises in weeks 2-4, display logged reps if available, otherwise prescribed reps
+                                const storedSetReps = loggedReps[setRepsKey] || displayReps;
                                 
                                 html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                                 html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
@@ -2743,15 +2839,9 @@
                     
                     if (reps) {
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                        // For powerlifting exercises, save to loggedReps (for logging only)
-                        // For other exercises, save to exerciseReps (used for calculations)
-                        if (key === 'power' && powerLiftingExercises.includes(ex.name)) {
-                            loggedReps[setRepsKey] = reps;
-                            saveLoggedReps();
-                        } else {
-                            exerciseReps[setRepsKey] = reps;
-                            saveExerciseReps();
-                        }
+                        // All exercises save logged reps to loggedReps (used for checking but not displaying)
+                        loggedReps[setRepsKey] = reps;
+                        saveLoggedReps();
                     }
                     
                     // Mark this set as completed
@@ -3018,7 +3108,7 @@
                 if (day.exercises.length > 0) {
                     html += '<div style="margin-bottom:12px"><strong>Exercises:</strong><ul style="margin:8px 0;padding-left:20px">';
                     day.exercises.forEach((ex, exIdx) => {
-                        const increment = ex.increment || (globalUnit === 'lbs' ? 5 : 2.5);
+                        const increment = ex.increment !== undefined ? ex.increment : (globalUnit === 'lbs' ? 5 : 2.5);
                         html += `<li>${ex.name} - ${ex.sets}x${ex.reps} (${increment.toFixed(1)} ${globalUnit}/week) <button onclick="startEditExercise(${dayIdx}, ${exIdx})" style="margin-left:8px;padding:2px 8px;background:transparent;color:var(--button-bg);border:1px solid var(--button-bg);border-radius:2px;cursor:pointer;font-size:12px">Edit</button><button onclick="removeExerciseFromDay(${dayIdx}, ${exIdx})" style="margin-left:4px;padding:2px 8px;background:transparent;color:var(--button-bg);border:1px solid var(--button-bg);border-radius:2px;cursor:pointer;font-size:12px">Remove</button></li>`;
                     });
                     html += '</ul></div>';
@@ -3031,7 +3121,7 @@
                 html += '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">';
                 html += '<input type="number" id="custom-exercise-sets" placeholder="Sets" min="1" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
                 html += '<span style="font-weight:bold;color:var(--text-color)">x</span>';
-                html += '<input type="number" id="custom-exercise-reps" placeholder="Reps" min="1" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
+                html += '<input type="text" id="custom-exercise-reps" placeholder="Reps (e.g. 8 or 8-10)" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
                 html += '</div>';
                 const defaultIncrement = globalUnit === 'lbs' ? 5 : 2.5;
                 html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:4px"><label style="white-space:nowrap;font-weight:500;font-size:14px">Increment weight by:</label><input type="number" id="custom-exercise-increment" placeholder="Increase by per week" min="0" step="0.5" value="' + defaultIncrement + '" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"><span style="font-weight:500;color:var(--text-color);white-space:nowrap">' + globalUnit + '/week</span></div>';
@@ -3053,7 +3143,7 @@
                 
                 const name = nameInput.value.trim();
                 const sets = parseInt(setsInput.value) || 3;
-                const reps = parseInt(repsInput.value) || 8;
+                const reps = repsInput.value.trim() || '8';
                 const increment = incrementInput.value !== '' ? parseFloat(incrementInput.value) : (globalUnit === 'lbs' ? 5 : 2.5);
                 
                 if (!name) {
@@ -3093,7 +3183,7 @@
                 const incrementInput = document.getElementById('custom-exercise-increment');
                 const name = nameInput.value.trim();
                 const sets = parseInt(setsInput.value) || 3;
-                const reps = parseInt(repsInput.value) || 8;
+                const reps = repsInput.value.trim() || '8';
                 const increment = incrementInput.value !== '' ? parseFloat(incrementInput.value) : (globalUnit === 'lbs' ? 5 : 2.5);
                 if (!name) { alert('Please enter an exercise name'); return; }
 
@@ -3144,10 +3234,10 @@
                 html += '<div style="margin-bottom:8px"><input type="text" id="edit-exercise-name" value="' + ex.name + '" style="width:100%;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"></div>';
                 html += '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
                 html += '<input type="number" id="edit-exercise-sets" value="' + ex.sets + '" min="1" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
-                html += '<input type="number" id="edit-exercise-reps" value="' + ex.reps + '" min="1" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
+                html += '<input type="text" id="edit-exercise-reps" value="' + ex.reps + '" placeholder="Reps (e.g. 8 or 8-10)" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
                 html += '</div>';
-                const increment = ex.increment || (globalUnit === 'lbs' ? 5 : 2.5);
-                html += '<div style="margin-bottom:8px"><input type="number" id="edit-exercise-increment" value="' + increment + '" min="0.1" step="0.5" style="width:100%;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"></div>';
+                const increment = ex.increment !== undefined ? ex.increment : (globalUnit === 'lbs' ? 5 : 2.5);
+                html += '<div style="margin-bottom:8px"><input type="number" id="edit-exercise-increment" value="' + increment + '" min="0" step="0.5" style="width:100%;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"></div>';
                 html += '<div style="display:flex;gap:8px">';
                 html += `<button onclick="saveEditedExercise(${dayIdx}, ${exIdx})" style="flex:1;padding:8px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold">Save</button>`;
                 html += `<button onclick="selectCustomDay(${dayIdx})" style="flex:1;padding:8px;background:transparent;color:var(--button-bg);border:1px solid var(--choice-border);border-radius:4px;cursor:pointer">Cancel</button>`;
@@ -3165,8 +3255,8 @@
                 
                 const name = nameInput.value.trim();
                 const sets = parseInt(setsInput.value) || 3;
-                const reps = parseInt(repsInput.value) || 8;
-                const increment = parseFloat(incrementInput.value) || (globalUnit === 'lbs' ? 5 : 2.5);
+                const reps = repsInput.value.trim() || '8';
+                const increment = parseFloat(incrementInput.value) !== '' && !isNaN(parseFloat(incrementInput.value)) ? parseFloat(incrementInput.value) : (globalUnit === 'lbs' ? 5 : 2.5);
                 
                 if (!name) {
                     alert('Please enter an exercise name');

@@ -165,12 +165,12 @@
         
         .hamburger {
             position: fixed;
-            top: 12px;
-            right: 16px;
+            top: 0;
+            right: 0;
             background: transparent !important;
             border: none !important;
             cursor: pointer;
-            padding: 10px;
+            padding: 12px 16px;
             z-index: 1100;
             transition: transform 0.22s ease;
             will-change: transform;
@@ -195,27 +195,27 @@
         
         .app-title {
             position: fixed;
-            top: 12px;
-            left: 16px;
+            top: 0;
+            left: 0;
+            width: 100%;
             font-size: 13.44px;
             font-weight: bold;
             color: var(--text-color);
-            z-index: 1100;
-            max-width: calc(100% - 120px);
+            z-index: 500;
             line-height: 33px;
-            padding: 10px 0;
+            padding: 12px 16px 6px 16px;
             cursor: pointer;
             user-select: none;
             transition: transform 0.22s ease;
             will-change: transform;
+            background-color: var(--container-bg);
+            box-sizing: border-box;
         }
 
-        /* Hidden state when scrolling down */
+        /* Hidden state - no longer used since title scrolls naturally */
         .app-title.hidden,
         .hamburger.hidden {
-            transform: translateY(-140%);
-            opacity: 0;
-            pointer-events: none;
+            display: none;
         }
         
         .easter-egg-overlay {
@@ -403,7 +403,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.91</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.92</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -439,7 +439,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.91</div>
+        <div class="menu-version" id="menu-version">v0.92</div>
     </div>
     
     <div class="container">
@@ -3303,44 +3303,8 @@
             });
 
             // Hide header as soon as user scrolls away from the top; show only at top
-            (function() {
-                const container = document.querySelector('.container');
-                const title = document.getElementById('app-title');
-                const hamb = document.querySelector('.hamburger');
-                if (!container || !title || !hamb) return;
-
-                const threshold = 2; // px from top
-                let ticking = false;
-
-                container.addEventListener('scroll', () => {
-                    const current = container.scrollTop;
-                    const isScrollable = container.scrollHeight > container.clientHeight;
-                    if (!ticking) {
-                        window.requestAnimationFrame(() => {
-                            const menuOpen = document.querySelector('.menu.open');
-                            // Only apply hiding if content is actually scrollable
-                            if (!isScrollable) {
-                                // Content fits on screen, always show header
-                                title.classList.remove('hidden');
-                                hamb.classList.remove('hidden');
-                            } else if (menuOpen) {
-                                // keep header visible while menu is open
-                                title.classList.remove('hidden');
-                                hamb.classList.remove('hidden');
-                            } else if (current <= threshold) {
-                                title.classList.remove('hidden');
-                                hamb.classList.remove('hidden');
-                            } else {
-                                title.classList.add('hidden');
-                                hamb.classList.add('hidden');
-                            }
-                            ticking = false;
-                        });
-                        ticking = true;
-                    }
-                }, { passive: true });
-            })();
-
+            // No longer needed - title bar scrolls naturally with content
+            
             // Load app version from version.json and apply to UI
             (function() {
                 fetch('./version.json', { cache: 'no-store' })

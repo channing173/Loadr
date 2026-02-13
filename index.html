@@ -214,6 +214,8 @@
         .app-title.hidden,
         .hamburger.hidden {
             transform: translateY(-140%);
+            opacity: 0;
+            pointer-events: none;
         }
         
         .easter-egg-overlay {
@@ -401,7 +403,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.9</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.91</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -437,7 +439,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.9</div>
+        <div class="menu-version" id="menu-version">v0.91</div>
     </div>
     
     <div class="container">
@@ -2460,7 +2462,7 @@
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                             html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${roundedSetWeight}</div>`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                            html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" inputmode="numeric" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                             
                             // Add plate button for barbell exercises
@@ -2536,7 +2538,7 @@
                                 html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                                 html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
                                 html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                                html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                                html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" inputmode="numeric" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                                 html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                                 
                                 // Add plate button for barbell exercises
@@ -3119,12 +3121,12 @@
                 html += '<h4 style="margin-top:0">Add Exercise</h4>';
                 html += '<div style="margin-bottom:8px"><input type="text" id="custom-exercise-name" placeholder="Exercise name (include &quot;barbell&quot; for barbell exercises)" style="width:100%;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"></div>';
                 html += '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">';
-                html += '<input type="number" id="custom-exercise-sets" placeholder="Sets" min="1" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
+                html += '<input type="number" id="custom-exercise-sets" placeholder="Sets" min="1" inputmode="numeric" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
                 html += '<span style="font-weight:bold;color:var(--text-color)">x</span>';
-                html += '<input type="text" id="custom-exercise-reps" placeholder="Reps (e.g. 8 or 8-10)" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
+                html += '<input type="text" id="custom-exercise-reps" placeholder="Reps (e.g. 8 or 8-10)" inputmode="numeric" style="flex:1;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box;min-width:0">';
                 html += '</div>';
                 const defaultIncrement = globalUnit === 'lbs' ? 5 : 2.5;
-                html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:4px"><label style="white-space:nowrap;font-weight:500;font-size:14px">Increment weight by:</label><input type="number" id="custom-exercise-increment" placeholder="Increase by per week" min="0" step="0.5" value="' + defaultIncrement + '" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"><span style="font-weight:500;color:var(--text-color);white-space:nowrap">' + globalUnit + '/week</span></div>';
+                html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:4px"><label style="white-space:nowrap;font-weight:500;font-size:14px">Increment weight by:</label><input type="number" id="custom-exercise-increment" placeholder="Increase by per week" min="0" step="0.5" value="' + defaultIncrement + '" inputmode="numeric" style="width:80px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--choice-bg);color:var(--text-color);box-sizing:border-box"><span style="font-weight:500;color:var(--text-color);white-space:nowrap">' + globalUnit + '/week</span></div>';
                 html += '<div style="display:flex;gap:8px">';
                 html += `<button onclick="addExerciseToDay(${dayIdx})" style="flex:1;padding:8px;background:var(--button-bg);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold">Add</button>`;
                 html += `<button onclick="addAndOpenExercise(${dayIdx})" style="flex:1;padding:8px;background:transparent;color:var(--button-bg);border:1px solid var(--choice-border);border-radius:4px;cursor:pointer">Save & View</button>`;

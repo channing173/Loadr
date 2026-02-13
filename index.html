@@ -66,7 +66,7 @@
             padding: 20px;
             padding-top: 60px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            overflow-y: auto;
+            overflow: auto;
             -webkit-overflow-scrolling: touch;
             transition: background-color 0.3s;
             position: relative;
@@ -3314,10 +3314,16 @@
 
                 container.addEventListener('scroll', () => {
                     const current = container.scrollTop;
+                    const isScrollable = container.scrollHeight > container.clientHeight;
                     if (!ticking) {
                         window.requestAnimationFrame(() => {
                             const menuOpen = document.querySelector('.menu.open');
-                            if (menuOpen) {
+                            // Only apply hiding if content is actually scrollable
+                            if (!isScrollable) {
+                                // Content fits on screen, always show header
+                                title.classList.remove('hidden');
+                                hamb.classList.remove('hidden');
+                            } else if (menuOpen) {
                                 // keep header visible while menu is open
                                 title.classList.remove('hidden');
                                 hamb.classList.remove('hidden');

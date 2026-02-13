@@ -393,7 +393,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.86</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.88</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -429,7 +429,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.86</div>
+        <div class="menu-version" id="menu-version">v0.88</div>
     </div>
     
     <div class="container">
@@ -854,6 +854,7 @@
                 // Clear only workout-related localStorage items
                 localStorage.removeItem('workoutWeights');
                 localStorage.removeItem('exerciseReps');
+                localStorage.removeItem('loggedReps');
                 localStorage.removeItem('oneRepMaxes');
                 localStorage.removeItem('completed1RMs');
                 localStorage.removeItem('completedExercises');
@@ -870,6 +871,7 @@
                 currentDay = null;
                 workoutWeights = {};
                 exerciseReps = {};
+                loggedReps = {};
                 oneRepMaxes = {};
                 expandedExercises = new Set();
                 completedExercises = new Set();
@@ -1183,6 +1185,9 @@
             // Store the results
             lastPlateResults = resultsDiv.innerHTML;
         }
+
+            // Powerlifting exercises that use 1RM formula instead of progressive increment
+            const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
 
             // Workout planner data structure: program > weeks > days > exercises
             const workoutPlans = {
@@ -1518,6 +1523,8 @@
             let workoutWeights = {};
             // Store reps for exercises per week: exerciseReps[key:weekNum] = reps value
             let exerciseReps = {};
+            // Store logged reps for powerlifting (separate from formula): loggedReps[key:weekNum:setNum] = user-entered value
+            let loggedReps = {};
             // Store 1RM for powerlifting exercises: oneRepMaxes[exerciseKey] = 1RM value
             let oneRepMaxes = {};
             // Track which exercise detail panels are expanded: entries like "program:week:day:exIdx"
@@ -1555,6 +1562,19 @@
             // Save reps to localStorage
             function saveExerciseReps() {
                 localStorage.setItem('exerciseReps', JSON.stringify(exerciseReps));
+            }
+            
+            // Load logged reps from localStorage
+            function loadLoggedReps() {
+                const saved = localStorage.getItem('loggedReps');
+                if (saved) {
+                    loggedReps = JSON.parse(saved);
+                }
+            }
+            
+            // Save logged reps to localStorage
+            function saveLoggedReps() {
+                localStorage.setItem('loggedReps', JSON.stringify(loggedReps));
             }
             
             // Load 1RM from localStorage
@@ -1772,6 +1792,26 @@
                 } else {
                     // lbs
                     return Math.round(weight / 10) * 10;
+                }
+            }
+            
+            // Check if user met the target reps (used for progressive overload)
+            // Returns true if should increment weight, false if stay at same weight
+            function meetsRepTarget(actualRepsStr, targetRepsStr) {
+                const actualReps = parseInt(actualRepsStr);
+                if (isNaN(actualReps)) return false;
+                
+                if (targetRepsStr.includes('-')) {
+                    // Range like "8-10"
+                    const parts = targetRepsStr.split('-');
+                    const minTarget = parseInt(parts[0].trim());
+                    const shortfall = minTarget - actualReps;
+                    return shortfall <= 1; // Increment if shortfall <= 1
+                } else {
+                    // Single number like "5"
+                    const target = parseInt(targetRepsStr);
+                    const shortfall = target - actualReps;
+                    return shortfall <= 1; // Increment if shortfall <= 1
                 }
             }
             
@@ -2013,6 +2053,13 @@
                                 // Mark 1RM as completed
                                 completed1RMs.add(exerciseKey);
                                 
+                                // Clear logged reps for all weeks for this powerlifting exercise
+                                for (let week = 1; week <= 4; week++) {
+                                    for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                        delete loggedReps[`${exerciseKey}:${week}:${setNum}`];
+                                    }
+                                }
+                                
                                 count++;
                                 // Continue to next exercise (don't process weight-based logic for powerlifting with 1RM)
                                 return;
@@ -2086,6 +2133,13 @@
                                         delete exerciseReps[`${exerciseKey}:${week}:${setNum}`];
                                     }
                                 }
+                                
+                                // Clear logged reps for all weeks
+                                for (let week = 1; week <= 4; week++) {
+                                    for (let setNum = 1; setNum <= ex.sets; setNum++) {
+                                        delete loggedReps[`${exerciseKey}:${week}:${setNum}`];
+                                    }
+                                }
                             }
                             
                             count++;
@@ -2100,6 +2154,7 @@
                 
                 saveWorkoutWeights();
                 saveExerciseReps();
+                saveLoggedReps();
                 saveOneRepMaxes();
                 saveCompleted1RMs();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
@@ -2256,8 +2311,11 @@
                         const isWeightDisabled = calculatedWeight !== null || isSetDone;
                         
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                        const storedSetReps = calculatedReps ? calculatedReps : (exerciseReps[setRepsKey] || displayReps);
-                        const isRepsDisabled = calculatedReps !== null || isSetDone;
+                        // For powerlifting with 1RM, display logged reps if available, otherwise formula reps
+                        // For other exercises, display stored reps or reps range
+                        const storedSetReps = calculatedReps ? (loggedReps[setRepsKey] || calculatedReps) : (exerciseReps[setRepsKey] || displayReps);
+                        // For powerlifting, reps are editable (for logging); for others, only if not disabled
+                        const isRepsDisabled = (calculatedReps !== null && !isPowerLiftingEx) || isSetDone;
                         
                         if (isCardioOrStretching) {
                             // For cardio/stretching: only show reps and check button
@@ -2304,7 +2362,8 @@
                             const setReps = params.reps;
                             
                             const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                            const storedSetReps = exerciseReps[setRepsKey] || setReps;
+                            // For powerlifting, display logged reps if available, otherwise formula reps
+                            const storedSetReps = loggedReps[setRepsKey] || setReps;
                             
                             html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
@@ -2350,7 +2409,24 @@
                             } else {
                                 increment = (globalUnit === 'kg') ? 2.5 : 5;
                             }
-                            const calculatedWeight = baseWeight + (weekMultiplier * increment);
+                            
+                            // Calculate weight with progressive overload check
+                            let calculatedWeight = baseWeight + (weekMultiplier * increment);
+                            
+                            // For weeks 3+, check if previous week's reps target was met
+                            // (only for non-powerlifting exercises; powerlifting reps are for logging only)
+                            const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(ex.name);
+                            if (weekNum >= 3 && !isPowerLiftingEx) {
+                                // Get previous week's actual reps (use first set as reference for week-level reps)
+                                const prevWeekRepsKey = `${exerciseKey}:${weekNum - 1}:1`;
+                                const prevWeekActualReps = exerciseReps[prevWeekRepsKey];
+                                
+                                // Check if previous week reps met target
+                                if (prevWeekActualReps && !meetsRepTarget(prevWeekActualReps, displayReps)) {
+                                    // Rep target not met, use previous week's weight instead of incrementing
+                                    calculatedWeight = baseWeight + ((weekNum - 2) * increment);
+                                }
+                            }
                             
                             // Generate rows for each set
                             for (let setNum = 1; setNum <= ex.sets; setNum++) {
@@ -2667,8 +2743,15 @@
                     
                     if (reps) {
                         const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
-                        exerciseReps[setRepsKey] = reps;
-                        saveExerciseReps();
+                        // For powerlifting exercises, save to loggedReps (for logging only)
+                        // For other exercises, save to exerciseReps (used for calculations)
+                        if (key === 'power' && powerLiftingExercises.includes(ex.name)) {
+                            loggedReps[setRepsKey] = reps;
+                            saveLoggedReps();
+                        } else {
+                            exerciseReps[setRepsKey] = reps;
+                            saveExerciseReps();
+                        }
                     }
                     
                     // Mark this set as completed
@@ -3113,6 +3196,7 @@
                 // Load saved weights and completed state
                 loadWorkoutWeights();
                 loadExerciseReps();
+                loadLoggedReps();
                 loadOneRepMaxes();
                 loadCompleted1RMs();
                 loadCompletedExercises();

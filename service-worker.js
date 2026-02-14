@@ -23,8 +23,8 @@ self.addEventListener('install', event => {
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })
       .catch(() => {
-        // fallback to v0.93 (must match version.json)
-        const CACHE_NAME = 'weight-converter-v0.93';
+        // fallback to v0.93.1 (must match version.json)
+        const CACHE_NAME = 'weight-converter-v0.93.1';
         self.CACHE_NAME = CACHE_NAME;
         return caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache));
       })

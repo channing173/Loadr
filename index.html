@@ -405,7 +405,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.93</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.93.1</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -441,7 +441,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.93</div>
+        <div class="menu-version" id="menu-version">v0.93.1</div>
     </div>
     
     <div class="container">
@@ -906,6 +906,7 @@
                 localStorage.removeItem('completedSets');
                 localStorage.removeItem('customPlan');
                 localStorage.removeItem('appState');
+                localStorage.removeItem('selectedExerciseVariants');
                 
                 // Restore theme preference
                 localStorage.setItem('theme', currentTheme);
@@ -924,6 +925,7 @@
                 completed1RMs = new Set();
                 customPlan = null;
                 globalUnit = 'lbs';
+                selectedExerciseVariants = {};
                 
                 // Close menu
                 toggleMenu();
@@ -1580,6 +1582,12 @@
             let completedSets = new Set();
             // Track completed 1RMs (entries like "program:exerciseName")
             let completed1RMs = new Set();
+            // Store selected exercise variants (entries like "power:1:2:3" -> "Lat Pulldown")
+            let selectedExerciseVariants = {};
+            // Define which exercises have variants and their options
+            const exerciseVariants = {
+                "Lat Pullover": ["Lat Pullover", "Lat Pulldown"]
+            };
             // Custom plan storage: { numDays, weeks: [ { num: 1, days: [...] }, ... ] }
             let customPlan = null;
             
@@ -1647,6 +1655,19 @@
             // Save completed 1RMs to localStorage
             function saveCompleted1RMs() {
                 localStorage.setItem('completed1RMs', JSON.stringify(Array.from(completed1RMs)));
+            }
+            
+            // Load selected exercise variants from localStorage
+            function loadSelectedExerciseVariants() {
+                const saved = localStorage.getItem('selectedExerciseVariants');
+                if (saved) {
+                    selectedExerciseVariants = JSON.parse(saved);
+                }
+            }
+            
+            // Save selected exercise variants to localStorage
+            function saveSelectedExerciseVariants() {
+                localStorage.setItem('selectedExerciseVariants', JSON.stringify(selectedExerciseVariants));
             }
             
             // Calculate average of reps values (array of "8", "7", "8" -> average as number)
@@ -1796,6 +1817,7 @@
                     completed1RMs.add(exerciseKey);
                 }
                 saveCompleted1RMs();
+                saveSelectedExerciseVariants();
                 // Re-render the exercise detail to update button styling
                 const currentExerciseId = document.querySelector('[id^="1rm-input-"]');
                 if (currentExerciseId) {
@@ -1826,6 +1848,94 @@
                     4: { 1: { percent: 0.40, reps: 5 }, 2: { percent: 0.50, reps: 5 }, 3: { percent: 0.60, reps: 5 } }
                 };
                 return params[weekNum] && params[weekNum][setNum] ? params[weekNum][setNum] : null;
+            }
+            
+            // Switch exercise variant (e.g., between Lat Pullover and Lat Pulldown)
+            function switchExerciseVariant(key, weekNum, dayIdx, exIdx) {
+                const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                const exercise = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                const originalExerciseName = exercise.name;
+                
+                // Check if this exercise has variants
+                if (!exerciseVariants[originalExerciseName]) {
+                    return; // No variants available
+                }
+                
+                const variantKey = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                const variants = exerciseVariants[originalExerciseName];
+                const currentVariant = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
+                
+                // Find next variant in the list
+                const currentIndex = variants.indexOf(currentVariant);
+                const nextIndex = (currentIndex + 1) % variants.length;
+                const nextVariant = variants[nextIndex];
+                
+                // Store the selected variant for this specific week
+                selectedExerciseVariants[variantKey] = nextVariant;
+                saveSelectedExerciseVariants();
+                
+                // Update the exercise button text in the day overview
+                const btnId = `exercise-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`;
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.textContent = nextVariant;
+                }
+                
+                // Re-render the exercise to show the new variant
+                showExercise(null, key, weekNum, dayIdx, exIdx, true);
+            }
+            
+            // Select specific exercise variant from dropdown
+            function selectExerciseVariant(key, weekNum, dayIdx, exIdx, selectedVariant) {
+                const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                const exercise = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                const originalExerciseName = exercise.name;
+                
+                // Check if this exercise has variants
+                if (!exerciseVariants[originalExerciseName]) {
+                    return; // No variants available
+                }
+                
+                // Store the selected variant for this specific week
+                const variantKey = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                selectedExerciseVariants[variantKey] = selectedVariant;
+                saveSelectedExerciseVariants();
+                
+                // Update the exercise button text in the day overview
+                const btnId = `exercise-btn-${key}-${weekNum}-${dayIdx}-${exIdx}`;
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.textContent = selectedVariant;
+                }
+                
+                // Re-render the exercise to show the new variant
+                showExercise(null, key, weekNum, dayIdx, exIdx, true);
+            }
+            
+            // Get the displayed exercise name (accounting for selected variants)
+            function getDisplayExerciseName(key, weekNum, dayIdx, exIdx) {
+                const plan = (key === 'custom') ? customPlan : workoutPlans[key];
+                const exercise = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
+                const originalName = exercise.name;
+                
+                // If this exercise has variants, return the selected one
+                if (exerciseVariants[originalName]) {
+                    // Check current week variant selection first (can be different per week)
+                    const variantKey = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
+                    if (selectedExerciseVariants[variantKey]) {
+                        return selectedExerciseVariants[variantKey];
+                    }
+                    
+                    // Fall back to week 1 variant selection (default if not explicitly set for this week)
+                    if (weekNum !== 1) {
+                        const week1VariantKey = `${key}:1:${dayIdx}:${exIdx}`;
+                        if (selectedExerciseVariants[week1VariantKey]) {
+                            return selectedExerciseVariants[week1VariantKey];
+                        }
+                    }
+                }
+                
+                return originalName;
             }
             
             // Round weight to nearest plate increment
@@ -2253,6 +2363,8 @@
                 saveLoggedReps();
                 saveOneRepMaxes();
                 saveCompleted1RMs();
+                selectedExerciseVariants = {};
+                saveSelectedExerciseVariants();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
                 // Clear all completion progress when exporting week 4 to week 1
                 completedExercises.clear();
@@ -2298,7 +2410,8 @@
                     const isDone = completedExercises.has(eid);
                     const doneClass = isDone ? ' completed' : '';
                     const doneStyle = isDone ? 'background: var(--button-bg); color: white; border-color: var(--button-bg);' : 'background: var(--container-bg); color: var(--text-color); border-color: var(--choice-border);';
-                    html += `<button id="${btnId}" onclick="showExercise(event, '${key}', ${weekNum}, ${dayIdx}, ${exIdx})" style="display:block;width:100%;padding:8px;margin:8px 0;${doneStyle}color:var(--text-color);border-radius:4px;cursor:pointer;text-align:left" class="exercise-btn${doneClass}" data-exercise="${exIdx}">${ex.name}</button><div id="exercise-detail-${weekNum}-${dayIdx}-${exIdx}" style="display:none;margin:4px 0 4px 8px;padding:8px;background:var(--choice-bg);border-left:4px solid var(--button-bg);border-radius:4px;"></div>`;
+                    const displayedExerciseName = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
+                    html += `<button id="${btnId}" onclick="showExercise(event, '${key}', ${weekNum}, ${dayIdx}, ${exIdx})" style="display:block;width:100%;padding:8px;margin:8px 0;${doneStyle}color:var(--text-color);border-radius:4px;cursor:pointer;text-align:left" class="exercise-btn${doneClass}" data-exercise="${exIdx}">${displayedExerciseName}</button><div id="exercise-detail-${weekNum}-${dayIdx}-${exIdx}" style="display:none;margin:4px 0 4px 8px;padding:8px;background:var(--choice-bg);border-left:4px solid var(--button-bg);border-radius:4px;"></div>`;
                 });
                 html += '</div>';
                 dayContentDiv.innerHTML = html;
@@ -2312,7 +2425,10 @@
                 const day = week.days[dayIdx];
                 const ex = day.exercises[exIdx];
                 const detailDiv = document.getElementById(`exercise-detail-${weekNum}-${dayIdx}-${exIdx}`);
-                const exerciseKey = getExerciseKey(key, ex.name);
+                
+                // Get the displayed exercise name (may be a variant)
+                const displayedExerciseName = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
+                const exerciseKey = getExerciseKey(key, displayedExerciseName);
 
                 const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
 
@@ -2351,7 +2467,20 @@
                 const displayReps = storedReps || ex.reps;
                 const isCardioOrStretching = ex.name === "Light Cardio" || ex.name === "Stretching";
                 let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-                html += `<div><strong>${ex.name}</strong>${ex.sets ? `<br style="margin-bottom:4px">Sets: ${ex.sets}` : ''}</div>`;
+                
+                // Render exercise name as dropdown if variants exist, otherwise as text
+                if (exerciseVariants[ex.name]) {
+                    const currentVariant = displayedExerciseName;
+                    const variants = exerciseVariants[ex.name];
+                    html += `<div><select onchange="selectExerciseVariant('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, this.value)" style="padding:6px 8px;background:var(--container-bg) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22><path fill=%22%23888%22 d=%22M0 0l6 8 6-8z%22/></svg>') no-repeat;background-position: right 6px center;background-size: 12px 8px;padding-right:26px;border:1px solid var(--choice-border);color:var(--text-color);border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;width:auto;appearance:none;-webkit-appearance:none;-moz-appearance:none;">`;
+                    variants.forEach(variant => {
+                        html += `<option value="${variant}" ${variant === currentVariant ? 'selected' : ''}>${variant}</option>`;
+                    });
+                    html += `</select></div>`;
+                } else {
+                    html += `<div><strong>${displayedExerciseName}</strong></div>`;
+                }
+                
                 // Show completion status (only for Week 1; weeks 2-4 track per-set completion below)
                 if (weekNum === 1) {
                     // For Week 1, show completion status
@@ -2558,7 +2687,7 @@
                                 html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
                                 html += `<div style="font-weight:bold;color:var(--button-bg);min-width:70px">${calculatedWeight.toFixed(1).replace(/\.0$/, '')}</div>`;
                                 html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
-                                html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" inputmode="numeric" onfocus="this.value=''" style="width:35px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
+                                html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" inputmode="numeric" onfocus="this.value=''" style="width:55px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isSetDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isSetDone ? 'disabled' : ''}>`;
                                 html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                                 
                                 // Add plate button for barbell exercises
@@ -2588,11 +2717,9 @@
 
                 // Only save if weight is provided and valid
                 if (weight && !isNaN(weight) && weight > 0) {
-                    // Get exercise name from plan if not provided
-                    const plan = (key === 'custom') ? customPlan : workoutPlans[key];
-                    if (!exerciseName && plan) {
-                        const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
-                        exerciseName = ex.name;
+                    // Get displayed exercise name if not provided
+                    if (!exerciseName) {
+                        exerciseName = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
                     }
 
                     const exerciseKey = getExerciseKey(key, exerciseName);
@@ -2631,11 +2758,9 @@
                     return;
                 }
 
-                // Get exercise name from plan if not provided
-                const plan = (key === 'custom') ? customPlan : workoutPlans[key];
-                if (!exerciseName && plan) {
-                    const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
-                    exerciseName = ex.name;
+                // Get displayed exercise name if not provided
+                if (!exerciseName) {
+                    exerciseName = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
                 }
 
                 const exerciseKey = getExerciseKey(key, exerciseName);
@@ -2827,8 +2952,9 @@
                 const setId = `${key}:${weekNum}:${dayIdx}:${exIdx}:${setNum}`;
                 const plan = (key === 'custom') ? customPlan : workoutPlans[key];
                 const ex = plan.weeks.find(w => w.num === weekNum).days[dayIdx].exercises[exIdx];
-                const exerciseName = ex.name;
-                const exerciseKey = getExerciseKey(key, exerciseName);
+                // Use the displayed exercise name (may be a variant)
+                const displayedExerciseName = getDisplayExerciseName(key, weekNum, dayIdx, exIdx);
+                const exerciseKey = getExerciseKey(key, displayedExerciseName);
                 const eid = `${key}:${weekNum}:${dayIdx}:${exIdx}`;
                 
                 // Toggle completion state
@@ -3312,6 +3438,7 @@
                 loadLoggedReps();
                 loadOneRepMaxes();
                 loadCompleted1RMs();
+                loadSelectedExerciseVariants();
                 loadCompletedExercises();
                 loadCompletedSets();
                 loadCustomPlan();

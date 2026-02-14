@@ -233,7 +233,10 @@
             
             // Add column headers
             const headers = document.createElement('div');
-            headers.className = 'column-headers';
+            headers.style.display = 'flex';
+            headers.style.justifyContent = 'space-around';
+            headers.style.fontSize = '12px';
+            headers.style.marginBottom = '8px';
             headers.innerHTML = '<div>Total</div><div>Per Side</div>';
             resultsDiv.appendChild(headers);
             
@@ -241,26 +244,32 @@
             // Only render plates with a non-zero total
             weights.filter(item => item.total > 0).forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'weight-row';
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-around';
+                row.style.marginBottom = '12px';
                 
                 // Total column
                 const totalItem = document.createElement('div');
-                totalItem.className = 'weight-item';
+                totalItem.style.display = 'flex';
+                totalItem.style.flexDirection = 'column';
+                totalItem.style.alignItems = 'center';
                 totalItem.innerHTML = `
-                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
+                    <div style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; border-radius: 50%; background: ${item.color}; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; color: #000;">
                         ${item.weight}
                     </div>
-                    <div class="count">${item.total}</div>
+                    <div style="margin-top: 4px; font-weight: bold;">${item.total}</div>
                 `;
                 
                 // Per Side column
                 const perSideItem = document.createElement('div');
-                perSideItem.className = 'weight-item';
+                perSideItem.style.display = 'flex';
+                perSideItem.style.flexDirection = 'column';
+                perSideItem.style.alignItems = 'center';
                 perSideItem.innerHTML = `
-                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
+                    <div style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; border-radius: 50%; background: ${item.color}; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; color: #000;">
                         ${item.weight}
                     </div>
-                    <div class="count">${item.perSide}</div>
+                    <div style="margin-top: 4px; font-weight: bold;">${item.perSide}</div>
                 `;
                 
                 row.appendChild(totalItem);

@@ -1138,7 +1138,11 @@
                     { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12, showCircle: true, color: lbsColors['2.5'] }
                 ];
             } else {
-                // kg plates (20, 15, 10, 5, 2.5, 1.25)
+                // kg plates (25, 20, 15, 10, 5, 2.5, 1.25)
+                let num25s = Math.trunc(number / 55.1156); // 25kg in lbs
+                if (num25s % 2 !== 0) num25s -= 1;
+                number -= num25s * 55.1156;
+                
                 let num20s = Math.trunc(number / 44.0925); // 20kg in lbs
                 if (num20s % 2 !== 0) num20s -= 1;
                 number -= num20s * 44.0925;
@@ -1163,6 +1167,7 @@
                 if (num1_25s % 2 !== 0) num1_25s -= 1;
                 
                 // Ensure no negative plate counts for kg plates
+                num25s = Math.max(0, num25s);
                 num20s = Math.max(0, num20s);
                 num15s = Math.max(0, num15s);
                 num10s = Math.max(0, num10s);
@@ -1172,15 +1177,17 @@
                 
                 // IPF color mapping for kg plates
                 const kgColors = {
+                    '25': '#DC143C',   // Red
                     '20': '#4169E1',   // Blue
                     '15': '#FFD700',   // Yellow
                     '10': '#228B22',   // Green
                     '5': '#F5F5F5',    // White
-                    '2.5': '#DC143C',  // Red
+                    '2.5': '#F5F5F5',  // White
                     '1.25': '#CCCCCC'  // Light Gray
                 };
                 
                 weights = [
+                    { weight: '25', total: num25s, perSide: num25s / 2, radius: 50, showCircle: true, color: kgColors['25'] },
                     { weight: '20', total: num20s, perSide: num20s / 2, radius: 45, showCircle: true, color: kgColors['20'] },
                     { weight: '15', total: num15s, perSide: num15s / 2, radius: 35, showCircle: true, color: kgColors['15'] },
                     { weight: '10', total: num10s, perSide: num10s / 2, radius: 25, showCircle: true, color: kgColors['10'] },
@@ -1229,52 +1236,61 @@
             
             // Add column headers
             const headers = document.createElement('div');
-            headers.className = 'column-headers';
+            headers.style.display = 'flex';
+            headers.style.justifyContent = 'space-around';
+            headers.style.fontSize = '12px';
+            headers.style.marginBottom = '8px';
             headers.innerHTML = '<div>Total</div><div>Per Side</div>';
             resultsDiv.appendChild(headers);
             
             // Add weight rows (only render plates with a non-zero total)
             weights.filter(item => item.total > 0).forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'weight-row';
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-around';
+                row.style.marginBottom = '12px';
                 
                 // Total column
                 const totalItem = document.createElement('div');
-                totalItem.className = 'weight-item';
+                totalItem.style.display = 'flex';
+                totalItem.style.flexDirection = 'column';
+                totalItem.style.alignItems = 'center';
                 
                 if (item.showCircle !== false) {
                     totalItem.innerHTML = `
-                        <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
+                        <div style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; border-radius: 50%; background: ${item.color}; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; color: #000;">
                             ${item.weight}
                         </div>
-                        <div class="count">${item.total}</div>
+                        <div style="margin-top: 4px; font-weight: bold;">${item.total}</div>
                     `;
                 } else {
                     totalItem.innerHTML = `
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px;">
                             ${item.weight}
                         </div>
-                        <div class="count">${item.total}</div>
+                        <div style="font-weight: bold; font-size: 18px;">${item.total}</div>
                     `;
                 }
                 
                 // Per Side column
                 const perSideItem = document.createElement('div');
-                perSideItem.className = 'weight-item';
+                perSideItem.style.display = 'flex';
+                perSideItem.style.flexDirection = 'column';
+                perSideItem.style.alignItems = 'center';
                 
                 if (item.showCircle !== false) {
                     perSideItem.innerHTML = `
-                        <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
+                        <div style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; border-radius: 50%; background: ${item.color}; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; color: #000;">
                             ${item.weight}
                         </div>
-                        <div class="count">${item.perSide}</div>
+                        <div style="margin-top: 4px; font-weight: bold;">${item.perSide}</div>
                     `;
                 } else {
                     perSideItem.innerHTML = `
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px;">
                             ${item.weight}
                         </div>
-                        <div class="count">${item.perSide}</div>
+                        <div style="margin-top: 4px; font-weight: bold;">${item.perSide}</div>
                     `;
                 }
                 
@@ -2097,11 +2113,12 @@
                         '2.5': '#F5F5F5'   // White
                     },
                     'kg': {
+                        '25': '#DC143C',   // Red
                         '20': '#4169E1',   // Blue
                         '15': '#FFD700',   // Yellow
                         '10': '#228B22',   // Green
                         '5': '#F5F5F5',    // White
-                        '2.5': '#DC143C',  // Red
+                        '2.5': '#F5F5F5',  // White
                         '1.25': '#CCCCCC'  // Light Gray for small plates
                     }
                 };
@@ -2165,6 +2182,10 @@
                         { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12, color: plateColors.lbs['2.5'] }
                     ];
                 } else {
+                    let num25s = Math.trunc(number / 55.1156);
+                    if (num25s % 2 !== 0) num25s -= 1;
+                    number -= num25s * 55.1156;
+                    
                     let num20s = Math.trunc(number / 44.0925);
                     if (num20s % 2 !== 0) num20s -= 1;
                     number -= num20s * 44.0925;
@@ -2194,8 +2215,10 @@
                     num5s = Math.max(0, num5s);
                     num2_5s = Math.max(0, num2_5s);
                     num1_25s = Math.max(0, num1_25s);
+                    num25s = Math.max(0, num25s);
                     
                     weights = [
+                        { weight: '25', total: num25s, perSide: num25s / 2, radius: 50, color: plateColors.kg['25'] },
                         { weight: '20', total: num20s, perSide: num20s / 2, radius: 45, color: plateColors.kg['20'] },
                         { weight: '15', total: num15s, perSide: num15s / 2, radius: 35, color: plateColors.kg['15'] },
                         { weight: '10', total: num10s, perSide: num10s / 2, radius: 25, color: plateColors.kg['10'] },

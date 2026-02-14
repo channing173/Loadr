@@ -406,7 +406,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.95</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.96</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -442,7 +442,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.95</div>
+        <div class="menu-version" id="menu-version">v0.96</div>
     </div>
     
     <div class="container">
@@ -718,15 +718,77 @@
                 }
             } catch (e) { /* ignore */ }
 
-            // Re-render current program/week/day so displayed numbers update in-place
+            // Convert weight inputs inline in the DOM
             try {
-                if (currentProgram) {
-                    displayWeeks(currentProgram);
-                    if (currentWeek) showWeek(currentProgram, currentWeek);
-                    if (currentDay !== null && currentWeek) showDay(currentProgram, currentWeek, currentDay);
-                }
-            } catch (e) { /* ignore */ }
-
+                // Find all weight input elements and convert them
+                document.querySelectorAll('input[id^="weight-input-"]').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val)) {
+                        const converted = globalUnit === 'kg' ? 
+                            Math.round(val * 0.453592) : 
+                            Math.round(val * 2.20462);
+                        input.value = converted;
+                    }
+                });
+                
+                // Update 1RM inputs (actual ID is "1rm-input-")
+                document.querySelectorAll('input[id^="1rm-input-"]').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val)) {
+                        const converted = globalUnit === 'kg' ? 
+                            Math.round(val * 0.453592) : 
+                            Math.round(val * 2.20462);
+                        input.value = converted;
+                    }
+                    // Update the unit display next to the 1RM input
+                    const unitSpan = input.nextElementSibling;
+                    if (unitSpan && unitSpan.textContent) {
+                        unitSpan.textContent = globalUnit;
+                    }
+                });
+                
+                // Update any visible plate displays (IDs are "plate-display-")
+                const plateDisplays = document.querySelectorAll('[id^="plate-display-"]');
+                plateDisplays.forEach(plateDiv => {
+                    // Only update if display is visible
+                    if (plateDiv.style.display !== 'none') {
+                        // Find the corresponding weight input for this set
+                        const plateDisplayId = plateDiv.id; // e.g., "plate-display-1-0-0-1"
+                        const parts = plateDisplayId.split('-');
+                        const weekNum = parts[2];
+                        const dayIdx = parts[3];
+                        const exIdx = parts[4];
+                        const setNum = parts[5];
+                        
+                        const weightInputId = `weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}`;
+                        const weightInput = document.getElementById(weightInputId);
+                        
+                        if (weightInput && weightInput.value) {
+                            const weight = parseFloat(weightInput.value);
+                            if (!isNaN(weight)) {
+                                // Get stored data from plate display
+                                const exerciseName = plateDiv.dataset.exerciseName || 'barbell';
+                                const key = plateDiv.dataset.key || 'power';
+                                const currentBarWeightLbs = parseFloat(plateDiv.dataset.currentBarWeight) || 45; // Always in lbs
+                                
+                                // Recalculate plate display with new unit
+                                let html = calculatePlateDisplay(weight, globalUnit, exerciseName, true, currentBarWeightLbs);
+                                
+                                // If this is a barbell exercise, add the bar weight button
+                                if (exerciseName.toLowerCase().includes('barbell')) {
+                                    const buttonBg = currentBarWeightLbs === 45 ? '#808080' : '#4CAF50';
+                                    html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${currentBarWeightLbs})" style="padding:4px 8px;border:none;border-radius:4px;background:${buttonBg};color:white;cursor:pointer;font-weight:bold">${currentBarWeightLbs} lbs</button></div>` + html;
+                                }
+                                
+                                plateDiv.innerHTML = html;
+                                // Update the stored weight to reflect the current unit's value
+                                plateDiv.dataset.weight = weight;
+                            }
+                        }
+                    }
+                });
+            } catch (e) { /* ignore DOM conversion errors */ }
+            
             toggleMenu();
         }
 
@@ -3132,25 +3194,25 @@
                         }
                         
                         // Determine initial bar weight (default to 45 lbs)
-                        let currentBarWeight = 45;
+                        let currentBarWeightLbs = 45;
                         try {
                             if (document.getElementById('bar-55') && document.getElementById('bar-55').checked) {
-                                currentBarWeight = 55;
+                                currentBarWeightLbs = 55;
                             }
                         } catch (e) { /* use default */ }
                         
                         // Update plate display with current weight
                         if (weight > 0) {
-                            let plateHTML = calculatePlateDisplay(weight, globalUnit, ex.name, true, currentBarWeight);
+                            let plateHTML = calculatePlateDisplay(weight, globalUnit, ex.name, true, currentBarWeightLbs);
                             
                             // Add bar weight toggle button if this is a barbell exercise
                             if (exerciseName.toLowerCase().includes('barbell')) {
-                                const buttonBg = currentBarWeight === 45 ? '#808080' : '#4CAF50';
-                                plateHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${currentBarWeight})" style="padding:4px 8px;border:none;border-radius:4px;background:${buttonBg};color:white;cursor:pointer;font-weight:bold">${currentBarWeight} lbs</button></div>` + plateHTML;
+                                const buttonBg = currentBarWeightLbs === 45 ? '#808080' : '#4CAF50';
+                                plateHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${currentBarWeightLbs})" style="padding:4px 8px;border:none;border-radius:4px;background:${buttonBg};color:white;cursor:pointer;font-weight:bold">${currentBarWeightLbs} lbs</button></div>` + plateHTML;
                             }
                             
                             plateDisplay.innerHTML = plateHTML;
-                            plateDisplay.dataset.currentBarWeight = currentBarWeight;
+                            plateDisplay.dataset.currentBarWeight = currentBarWeightLbs;
                             plateDisplay.dataset.exerciseName = exerciseName;
                             plateDisplay.dataset.weight = weight;
                             plateDisplay.dataset.key = key;
@@ -3177,22 +3239,22 @@
                 }
             }
             
-            function updateBarWeightInPlateDisplay(button, weekNum, dayIdx, exIdx, setNum, key, currentBarWeight) {
+            function updateBarWeightInPlateDisplay(button, weekNum, dayIdx, exIdx, setNum, key, currentBarWeightLbs) {
                 const plateDisplay = document.getElementById(`plate-display-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
                 if (!plateDisplay) return;
                 
-                // Toggle bar weight
-                const newBarWeight = currentBarWeight === 45 ? 55 : 45;
+                // Toggle bar weight (always in lbs internally: 45 or 55)
+                const newBarWeightLbs = currentBarWeightLbs === 45 ? 55 : 45;
                 
                 // Get stored values
                 const weight = parseFloat(plateDisplay.dataset.weight);
                 const exerciseName = plateDisplay.dataset.exerciseName;
                 
                 // Recalculate plates with new bar weight
-                const plateHTML = calculatePlateDisplay(weight, globalUnit, exerciseName, true, newBarWeight);
+                const plateHTML = calculatePlateDisplay(weight, globalUnit, exerciseName, true, newBarWeightLbs);
                 
-                // Update button and content
-                button.textContent = `${newBarWeight} lbs`;
+                // Update button display (always in lbs)
+                button.textContent = `${newBarWeightLbs} lbs`;
                 
                 // Replace just the plate content (everything after the button row)
                 const containerDiv = plateDisplay.firstElementChild;
@@ -3201,11 +3263,11 @@
                 }
                 
                 // Rebuild HTML with button and plates
-                const newButtonBg = newBarWeight === 45 ? '#808080' : '#4CAF50';
-                let fullHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${newBarWeight})" style="padding:4px 8px;border:none;border-radius:4px;background:${newButtonBg};color:white;cursor:pointer;font-weight:bold">${newBarWeight} lbs</button></div>` + plateHTML;
+                const newButtonBg = newBarWeightLbs === 45 ? '#808080' : '#4CAF50';
+                let fullHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Bar Weight:</strong><button onclick="updateBarWeightInPlateDisplay(this, '${weekNum}', '${dayIdx}', '${exIdx}', '${setNum}', '${key}', ${newBarWeightLbs})" style="padding:4px 8px;border:none;border-radius:4px;background:${newButtonBg};color:white;cursor:pointer;font-weight:bold">${newBarWeightLbs} lbs</button></div>` + plateHTML;
                 
                 plateDisplay.innerHTML = fullHTML;
-                plateDisplay.dataset.currentBarWeight = newBarWeight;
+                plateDisplay.dataset.currentBarWeight = newBarWeightLbs;
             }
 
             function completeSet(key, weekNum, dayIdx, exIdx, setNum) {

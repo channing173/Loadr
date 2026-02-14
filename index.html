@@ -2485,8 +2485,16 @@
                             // Count consecutive weeks that hit rep targets starting from Week 1
                             let consecutiveWeeksHit = 0;
                             
+                            // Helper function to get target rep count from range or single value
+                            const getTargetReps = (repsValue) => {
+                                if (typeof repsValue === 'string' && repsValue.includes('-')) {
+                                    return parseInt(repsValue.split('-')[0]); // Get lower bound of range
+                                }
+                                return parseInt(repsValue);
+                            };
+                            
                             // Check Week 1 first
-                            const week1TargetReps = exerciseReps[`${exerciseKey}:1`] || ex.reps;
+                            const week1TargetReps = getTargetReps(exerciseReps[`${exerciseKey}:1`] || ex.reps);
                             let week1OnTarget = false;
                             for (let s = 1; s <= ex.sets; s++) {
                                 const setRepsKey = `${exerciseKey}:1:${s}`;
@@ -2510,7 +2518,7 @@
                             // Continue counting subsequent weeks
                             for (let week = 2; week <= 4; week++) {
                                 const weekEx = plan.weeks[week - 1].days[dayIdx].exercises[exIdx];
-                                const targetReps = exerciseReps[`${exerciseKey}:${week}`] || weekEx.reps;
+                                const targetReps = getTargetReps(exerciseReps[`${exerciseKey}:${week}`] || weekEx.reps);
                                 
                                 // Check if reps hit target this week
                                 let weekOnTarget = false;
@@ -2540,7 +2548,7 @@
                             let week4DisplayWeight = baseWeight + (increment * Math.min(consecutiveWeeksHit, 3));
                             
                             // Check if Week 4 specifically hit its rep target
-                            const week4TargetReps = exerciseReps[`${exerciseKey}:4`] || week4Ex.reps;
+                            const week4TargetReps = getTargetReps(exerciseReps[`${exerciseKey}:4`] || week4Ex.reps);
                             let week4OnTarget = false;
                             for (let s = 1; s <= ex.sets; s++) {
                                 const setRepsKey = `${exerciseKey}:4:${s}`;

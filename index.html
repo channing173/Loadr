@@ -2515,31 +2515,31 @@
                                 consecutiveWeeksHit = 0; // Week 1 missed, no progression
                             }
                             
-                            // Continue counting subsequent weeks
-                            for (let week = 2; week <= 4; week++) {
-                                const weekEx = plan.weeks[week - 1].days[dayIdx].exercises[exIdx];
-                                const targetReps = getTargetReps(exerciseReps[`${exerciseKey}:${week}`] || weekEx.reps);
-                                
-                                // Check if reps hit target this week
-                                let weekOnTarget = false;
-                                for (let s = 1; s <= ex.sets; s++) {
-                                    const setRepsKey = `${exerciseKey}:${week}:${s}`;
-                                    const loggedRep = loggedReps[setRepsKey];
+                            // Count all weeks that hit targets
+                            if (week1OnTarget) {
+                                for (let week = 2; week <= 4; week++) {
+                                    const weekEx = plan.weeks[week - 1].days[dayIdx].exercises[exIdx];
+                                    const targetReps = getTargetReps(exerciseReps[`${exerciseKey}:${week}`] || weekEx.reps);
                                     
-                                    if (loggedRep) {
-                                        const repValue = parseInt(loggedRep.toString().split('-')[1] || loggedRep);
-                                        if (repValue >= targetReps) {
-                                            weekOnTarget = true;
-                                            break;
+                                    // Check if reps hit target this week
+                                    let weekOnTarget = false;
+                                    for (let s = 1; s <= ex.sets; s++) {
+                                        const setRepsKey = `${exerciseKey}:${week}:${s}`;
+                                        const loggedRep = loggedReps[setRepsKey];
+                                        
+                                        if (loggedRep) {
+                                            const repValue = parseInt(loggedRep.toString().split('-')[1] || loggedRep);
+                                            if (repValue >= targetReps) {
+                                                weekOnTarget = true;
+                                                break;
+                                            }
                                         }
                                     }
-                                }
-                                
-                                // If this week hit target, increment count; otherwise stop progression
-                                if (weekOnTarget) {
-                                    consecutiveWeeksHit++;
-                                } else {
-                                    break; // Stop counting at first miss
+                                    
+                                    // Add to count if this week hit target
+                                    if (weekOnTarget) {
+                                        consecutiveWeeksHit++;
+                                    }
                                 }
                             }
                             
@@ -2564,8 +2564,8 @@
                             }
                             
                             // Export: use Week 4 displayed weight
-                            // If Week 4 reps were hit, add increment for next cycle
-                            let newWeek1Weight = week4OnTarget ? week4DisplayWeight + increment : week4DisplayWeight;
+                            // Only add a bonus increment if all 4 weeks hit targets
+                            let newWeek1Weight = consecutiveWeeksHit === 4 ? week4DisplayWeight + increment : week4DisplayWeight;
                             
                             // Pre-fill all sets with the new weight for week 1
                             for (let setNum = 1; setNum <= ex.sets; setNum++) {

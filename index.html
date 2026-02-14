@@ -2239,7 +2239,9 @@
                 const plan = (key === 'custom') ? customPlan : workoutPlans[key];
                 plan.weeks[0].days.forEach((day, dayIdx) => {
                     day.exercises.forEach((ex, exIdx) => {
-                        const exerciseKey = getExerciseKey(key, ex.name);
+                        // For variant exercises, get the displayed variant name from Week 1 selection
+                        const displayedExerciseName = getDisplayExerciseName(key, 1, dayIdx, exIdx);
+                        const exerciseKey = getExerciseKey(key, displayedExerciseName);
                         
                         // Skip if we've already processed this exercise (handles duplicates across days)
                         if (processedExercises.has(exerciseKey)) {
@@ -2276,15 +2278,40 @@
                             }
                         }
                         
-                        let baseWeight = workoutWeights[exerciseKey];
+                        // Look for weight using variant name (if applicable) and original name as fallback
+                        let baseWeight = null;
                         
-                        // If no base weight, find the maximum weight from per-set weights
+                        // First, try the variant key directly
+                        if (workoutWeights[exerciseKey]) {
+                            baseWeight = workoutWeights[exerciseKey];
+                        }
+                        
+                        // If not found and this is a variant, try the original exercise name
+                        if (!baseWeight && exerciseVariants[ex.name]) {
+                            const originalExerciseKey = getExerciseKey(key, ex.name);
+                            if (workoutWeights[originalExerciseKey]) {
+                                baseWeight = workoutWeights[originalExerciseKey];
+                            }
+                        }
+                        
+                        // If still no weight found, try per-set weights (check both variant and original)
                         if (!baseWeight) {
                             let maxWeight = 0;
+                            // Check per-set weights with variant key
                             for (let s = 1; s <= ex.sets; s++) {
                                 const setWeight = workoutWeights[`${exerciseKey}:${s}`];
                                 if (setWeight && setWeight > maxWeight) {
                                     maxWeight = setWeight;
+                                }
+                            }
+                            // If still not found and this is a variant, check original per-set weights
+                            if (maxWeight === 0 && exerciseVariants[ex.name]) {
+                                const originalExerciseKey = getExerciseKey(key, ex.name);
+                                for (let s = 1; s <= ex.sets; s++) {
+                                    const setWeight = workoutWeights[`${originalExerciseKey}:${s}`];
+                                    if (setWeight && setWeight > maxWeight) {
+                                        maxWeight = setWeight;
+                                    }
                                 }
                             }
                             if (maxWeight > 0) {
@@ -2296,7 +2323,7 @@
                             // Get the week 4 exercise object to ensure consistent increment
                             const week4Ex = plan.weeks[3].days[dayIdx].exercises[exIdx];
                             
-                            // Calculate week 4 weight using the SAME logic as showExercise, using week 4 exercise's increment
+                            // Calculate increment for week 4
                             let increment;
                             if (week4Ex.increment !== undefined) {
                                 // Always treat increment as lbs, convert if needed
@@ -2304,9 +2331,43 @@
                             } else {
                                 increment = (globalUnit === 'kg') ? 2.5 : 5;
                             }
-                            const week4Weight = baseWeight + (increment * 3);
                             
-                            // Pre-fill all sets with the week 4 weight for new week 1
+                            // Count how many weeks had reps logged to calculate current week 4 weight
+                            let weeksWithReps = 1; // Week 1 always counts since we have a baseWeight
+                            for (let week = 2; week <= 4; week++) {
+                                let weekHasReps = false;
+                                for (let s = 1; s <= ex.sets; s++) {
+                                    const setRepsKey = `${exerciseKey}:${week}:${s}`;
+                                    if (loggedReps[setRepsKey]) {
+                                        weekHasReps = true;
+                                        break;
+                                    }
+                                }
+                                if (weekHasReps) {
+                                    weeksWithReps++;
+                                } else {
+                                    // Stop counting weeks after the first week without reps
+                                    break;
+                                }
+                            }
+                            
+                            // Calculate current week 4 weight based on actual weeks completed
+                            let week4Weight = baseWeight + (increment * (weeksWithReps - 1));
+                            
+                            // Check if week 4 reps were logged - if yes, add increment for the new cycle
+                            let week4HasReps = false;
+                            for (let s = 1; s <= ex.sets; s++) {
+                                const setRepsKey = `${exerciseKey}:4:${s}`;
+                                if (loggedReps[setRepsKey]) {
+                                    week4HasReps = true;
+                                    break;
+                                }
+                            }
+                            if (week4HasReps) {
+                                week4Weight += increment;
+                            }
+                            
+                            // Pre-fill all sets with the calculated weight for new week 1
                             for (let setNum = 1; setNum <= ex.sets; setNum++) {
                                 workoutWeights[`${exerciseKey}:${setNum}`] = week4Weight;
                             }
@@ -2363,7 +2424,6 @@
                 saveLoggedReps();
                 saveOneRepMaxes();
                 saveCompleted1RMs();
-                selectedExerciseVariants = {};
                 saveSelectedExerciseVariants();
                 alert(`✓ Exported ${count} exercise(s)!\n\nNow starting a new 4-week cycle at higher weights. Go to Week 1 to begin!`);
                 // Clear all completion progress when exporting week 4 to week 1
@@ -2825,11 +2885,11 @@
                             // For week 1, get the weight from the input
                             const weightInput = document.getElementById(`weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}`);
                             const rawWeight = weightInput ? parseFloat(weightInput.value) : 0;
-                            weight = rawWeight > 0 ? roundToNearestPlateIncrement(rawWeight, globalUnit) : 0;
+                            weight = rawWeight > 0 ? rawWeight : 0;
                         } else {
                             // For weeks 2-4, check if this is a powerlifting exercise with 1RM
                             const powerLiftingExercises = ['Barbell Squat', 'Barbell Bench', 'Barbell Deadlift', 'Barbell OHP'];
-                            const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(exerciseName);
+                            const isPowerLiftingEx = key === 'power' && powerLiftingExercises.includes(ex.name);
                             const oneRM = oneRepMaxes[exerciseKey];
                             
                             if (isPowerLiftingEx && oneRM) {
@@ -2881,7 +2941,7 @@
                         
                         // Update plate display with current weight
                         if (weight > 0) {
-                            let plateHTML = calculatePlateDisplay(weight, globalUnit, exerciseName, true, currentBarWeight);
+                            let plateHTML = calculatePlateDisplay(weight, globalUnit, ex.name, true, currentBarWeight);
                             
                             // Add bar weight toggle button if this is a barbell exercise
                             if (exerciseName.toLowerCase().includes('barbell')) {

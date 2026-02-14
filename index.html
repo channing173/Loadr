@@ -405,7 +405,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.93.1</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.94</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -441,7 +441,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.93.1</div>
+        <div class="menu-version" id="menu-version">v0.94</div>
     </div>
     
     <div class="container">
@@ -466,7 +466,7 @@
             <h1>Plate Converter</h1>
             
             <div class="input-section">
-                <input type="number" id="weight-input" step="0.1" placeholder="Enter weight" inputmode="decimal" pattern="[0-9]*">
+                <input type="text" id="weight-input" step="0.1" placeholder="Enter weight" inputmode="numeric" pattern="[0-9]*">
                 <button onclick="convertWeights()">Convert</button>
                 
                 <div class="checkbox-group">
@@ -2504,7 +2504,7 @@
                         const is1RMDone = completed1RMs.has(exerciseKey);
                         html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                         html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px;display:inline-block">1RM:</span>`;
-                        html += `<input type="number" id="1rm-input-${exerciseKey}" value="${oneRepMaxValue}" placeholder="1RM" step="0.1" style="width:55px;margin-left:4px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${is1RMDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${is1RMDone ? 'disabled' : ''} onchange="save1RM('${exerciseKey}', this.value)">`;
+                        html += `<input type="text" id="1rm-input-${exerciseKey}" value="${oneRepMaxValue}" placeholder="1RM" step="0.1" style="width:55px;margin-left:4px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${is1RMDone ? 'opacity:0.6;cursor:not-allowed' : ''}" ${is1RMDone ? 'disabled' : ''} inputmode="numeric" onchange="save1RM('${exerciseKey}', this.value)">`;
                         html += `<span style="font-weight:bold;color:var(--text-color)">${globalUnit}</span>`;
                         html += `<button onclick="complete1RM('${exerciseKey}')" style="min-height:32px;padding:6px 10px;background:${is1RMDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;
                         html += `</div>`;
@@ -2551,7 +2551,7 @@
                             // For regular exercises: show weight x reps format
                             html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding:2px;background:var(--choice-bg);border-radius:4px;flex-wrap:wrap">`;
                             html += `<span style="font-weight:bold;color:var(--text-color);min-width:40px">Set ${setNum}:</span>`;
-                            html += `<input type="number" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultWeightValue}" placeholder="Weight" step="0.1" style="width:55px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isWeightDisabled ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isWeightDisabled ? 'disabled' : ''}>`;
+                            html += `<input type="text" id="weight-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${defaultWeightValue}" placeholder="Weight" step="0.1" style="width:55px;padding:6px 2px 6px 6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isWeightDisabled ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isWeightDisabled ? 'disabled' : ''} inputmode="numeric">`;
                             html += `<span style="font-weight:bold;color:var(--text-color)">×</span>`;
                             html += `<input type="text" id="reps-input-${weekNum}-${dayIdx}-${exIdx}-${setNum}" value="${storedSetReps}" placeholder="Reps" inputmode="numeric" onfocus="this.value=''" style="width:55px;padding:6px;border:1px solid var(--choice-border);border-radius:4px;background:var(--container-bg);color:var(--text-color);font-size:1em;font-family:inherit;${isRepsDisabled ? 'opacity:0.6;cursor:not-allowed' : ''}" ${isRepsDisabled ? 'disabled' : ''}>`;
                             html += `<button onclick="completeSet('${key}', ${weekNum}, ${dayIdx}, ${exIdx}, ${setNum})" style="min-height:32px;padding:6px 10px;background:${isSetDone ? '#4CAF50' : '#888888'};color:white;border:none;border-radius:4px;cursor:pointer">✓</button>`;

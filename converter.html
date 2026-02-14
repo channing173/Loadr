@@ -39,11 +39,15 @@
             margin-bottom: 20px;
         }
         
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             width: 200px;
             padding: 10px;
             font-size: 16px;
             margin: 10px 0;
+            background-color: #fff;
+            color: #333;
+            border: 2px solid #333;
+            transition: all 0.3s;
         }
         
         .checkbox-group {
@@ -96,13 +100,13 @@
         
         .circle {
             border-radius: 50%;
-            background-color: lightblue;
-            border: 2px solid black;
+            border: 2px solid #333;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
+            color: #000;
         }
         
         .count {
@@ -118,7 +122,7 @@
         
         <div class="input-section">
             <label for="weight-input">Enter weight:</label><br>
-            <input type="number" id="weight-input" step="0.1" placeholder="Enter weight">
+            <input type="text" id="weight-input" step="0.1" placeholder="Enter weight" inputmode="numeric" pattern="[0-9]*">
             
             <div class="checkbox-group">
                 <label>
@@ -204,13 +208,22 @@
             num5s = Math.max(0, num5s);
             numsmalls = Math.max(0, numsmalls);
             
+            // IPF color mapping for plates
+            const plateColors = {
+                '45': '#DC143C',   // Red
+                '25': '#4169E1',   // Blue
+                '10': '#FFD700',   // Yellow
+                '5': '#228B22',    // Green
+                '2.5': '#F5F5F5'   // White
+            };
+            
             // Display results
             displayResults([
-                { weight: '45', total: num45s, perSide: num45s / 2, radius: 45 },
-                { weight: '25', total: num25s, perSide: num25s / 2, radius: 30 },
-                { weight: '10', total: num10s, perSide: num10s / 2, radius: 20 },
-                { weight: '5', total: num5s, perSide: num5s / 2, radius: 15 },
-                { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12 }
+                { weight: '45', total: num45s, perSide: num45s / 2, radius: 45, color: plateColors['45'] },
+                { weight: '25', total: num25s, perSide: num25s / 2, radius: 30, color: plateColors['25'] },
+                { weight: '10', total: num10s, perSide: num10s / 2, radius: 20, color: plateColors['10'] },
+                { weight: '5', total: num5s, perSide: num5s / 2, radius: 15, color: plateColors['5'] },
+                { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12, color: plateColors['2.5'] }
             ]);
         }
         
@@ -234,7 +247,7 @@
                 const totalItem = document.createElement('div');
                 totalItem.className = 'weight-item';
                 totalItem.innerHTML = `
-                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px;">
+                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
                         ${item.weight}
                     </div>
                     <div class="count">${item.total}</div>
@@ -244,7 +257,7 @@
                 const perSideItem = document.createElement('div');
                 perSideItem.className = 'weight-item';
                 perSideItem.innerHTML = `
-                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px;">
+                    <div class="circle" style="width: ${item.radius * 2}px; height: ${item.radius * 2}px; background-color: ${item.color};">
                         ${item.weight}
                     </div>
                     <div class="count">${item.perSide}</div>

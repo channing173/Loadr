@@ -405,7 +405,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.94</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.95</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -441,7 +441,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.94</div>
+        <div class="menu-version" id="menu-version">v0.95</div>
     </div>
     
     <div class="container">
@@ -1976,6 +1976,25 @@
                 const originalWeight = number;
                 const displayUnit = unit;
 
+                // IPF color mapping for plates
+                const plateColors = {
+                    'lbs': {
+                        '45': '#DC143C',   // Red
+                        '25': '#4169E1',   // Blue
+                        '10': '#FFD700',   // Yellow
+                        '5': '#228B22',    // Green
+                        '2.5': '#F5F5F5'   // White
+                    },
+                    'kg': {
+                        '20': '#4169E1',   // Blue
+                        '15': '#FFD700',   // Yellow
+                        '10': '#228B22',   // Green
+                        '5': '#F5F5F5',    // White
+                        '2.5': '#DC143C',  // Red
+                        '1.25': '#CCCCCC'  // Light Gray for small plates
+                    }
+                };
+
                 // Convert to lbs if in kg mode for calculation
                 if (unit === 'kg') {
                     number = number * 2.20462;
@@ -2028,11 +2047,11 @@
                     numsmalls = Math.max(0, numsmalls);
                     
                     weights = [
-                        { weight: '45', total: num45s, perSide: num45s / 2, radius: 45 },
-                        { weight: '25', total: num25s, perSide: num25s / 2, radius: 30 },
-                        { weight: '10', total: num10s, perSide: num10s / 2, radius: 20 },
-                        { weight: '5', total: num5s, perSide: num5s / 2, radius: 15 },
-                        { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12 }
+                        { weight: '45', total: num45s, perSide: num45s / 2, radius: 45, color: plateColors.lbs['45'] },
+                        { weight: '25', total: num25s, perSide: num25s / 2, radius: 30, color: plateColors.lbs['25'] },
+                        { weight: '10', total: num10s, perSide: num10s / 2, radius: 20, color: plateColors.lbs['10'] },
+                        { weight: '5', total: num5s, perSide: num5s / 2, radius: 15, color: plateColors.lbs['5'] },
+                        { weight: '2.5', total: numsmalls, perSide: numsmalls / 2, radius: 12, color: plateColors.lbs['2.5'] }
                     ];
                 } else {
                     let num20s = Math.trunc(number / 44.0925);
@@ -2066,12 +2085,12 @@
                     num1_25s = Math.max(0, num1_25s);
                     
                     weights = [
-                        { weight: '20', total: num20s, perSide: num20s / 2, radius: 45 },
-                        { weight: '15', total: num15s, perSide: num15s / 2, radius: 35 },
-                        { weight: '10', total: num10s, perSide: num10s / 2, radius: 25 },
-                        { weight: '5', total: num5s, perSide: num5s / 2, radius: 18 },
-                        { weight: '2.5', total: num2_5s, perSide: num2_5s / 2, radius: 12 },
-                        { weight: '1.25', total: num1_25s, perSide: num1_25s / 2, radius: 10 }
+                        { weight: '20', total: num20s, perSide: num20s / 2, radius: 45, color: plateColors.kg['20'] },
+                        { weight: '15', total: num15s, perSide: num15s / 2, radius: 35, color: plateColors.kg['15'] },
+                        { weight: '10', total: num10s, perSide: num10s / 2, radius: 25, color: plateColors.kg['10'] },
+                        { weight: '5', total: num5s, perSide: num5s / 2, radius: 18, color: plateColors.kg['5'] },
+                        { weight: '2.5', total: num2_5s, perSide: num2_5s / 2, radius: 12, color: plateColors.kg['2.5'] },
+                        { weight: '1.25', total: num1_25s, perSide: num1_25s / 2, radius: 10, color: plateColors.kg['1.25'] }
                     ];
                 }
                 
@@ -2081,10 +2100,10 @@
                 weights.filter(item => item.total > 0).forEach(item => {
                     html += `<div style="display:flex;justify-content:space-around;margin-bottom:12px">`;
                     html += `<div style="display:flex;flex-direction:column;align-items:center">`;
-                    html += `<div style="width:${item.radius * 2}px;height:${item.radius * 2}px;border-radius:50%;background:var(--circle-bg);border:2px solid var(--circle-border);display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:12px">${item.weight}</div>`;
+                    html += `<div style="width:${item.radius * 2}px;height:${item.radius * 2}px;border-radius:50%;background:${item.color};border:2px solid #333;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:12px;color:#000">${item.weight}</div>`;
                     html += `<div style="margin-top:4px;font-weight:bold">${item.total}</div></div>`;
                     html += `<div style="display:flex;flex-direction:column;align-items:center">`;
-                    html += `<div style="width:${item.radius * 2}px;height:${item.radius * 2}px;border-radius:50%;background:var(--circle-bg);border:2px solid var(--circle-border);display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:12px">${item.weight}</div>`;
+                    html += `<div style="width:${item.radius * 2}px;height:${item.radius * 2}px;border-radius:50%;background:${item.color};border:2px solid #333;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:12px;color:#000">${item.weight}</div>`;
                     html += `<div style="margin-top:4px;font-weight:bold">${item.perSide}</div></div></div>`;
                 });
                 
@@ -2320,56 +2339,95 @@
                         }
                         
                         if (baseWeight) {
-                            // Get the week 4 exercise object to ensure consistent increment
                             const week4Ex = plan.weeks[3].days[dayIdx].exercises[exIdx];
                             
-                            // Calculate increment for week 4
                             let increment;
                             if (week4Ex.increment !== undefined) {
-                                // Always treat increment as lbs, convert if needed
                                 increment = (globalUnit === 'kg') ? +(week4Ex.increment * 0.453592).toFixed(1) : week4Ex.increment;
                             } else {
                                 increment = (globalUnit === 'kg') ? 2.5 : 5;
                             }
                             
-                            // Count how many weeks had reps logged to calculate current week 4 weight
-                            let weeksWithReps = 1; // Week 1 always counts since we have a baseWeight
-                            for (let week = 2; week <= 4; week++) {
-                                let weekHasReps = false;
-                                for (let s = 1; s <= ex.sets; s++) {
-                                    const setRepsKey = `${exerciseKey}:${week}:${s}`;
-                                    if (loggedReps[setRepsKey]) {
-                                        weekHasReps = true;
+                            // Count consecutive weeks that hit rep targets starting from Week 1
+                            let consecutiveWeeksHit = 0;
+                            
+                            // Check Week 1 first
+                            const week1TargetReps = exerciseReps[`${exerciseKey}:1`] || ex.reps;
+                            let week1OnTarget = false;
+                            for (let s = 1; s <= ex.sets; s++) {
+                                const setRepsKey = `${exerciseKey}:1:${s}`;
+                                const loggedRep = loggedReps[setRepsKey];
+                                
+                                if (loggedRep) {
+                                    const repValue = parseInt(loggedRep.toString().split('-')[1] || loggedRep);
+                                    if (repValue >= week1TargetReps) {
+                                        week1OnTarget = true;
                                         break;
                                     }
                                 }
-                                if (weekHasReps) {
-                                    weeksWithReps++;
+                            }
+                            
+                            if (week1OnTarget) {
+                                consecutiveWeeksHit = 1; // Week 1 hit target
+                            } else {
+                                consecutiveWeeksHit = 0; // Week 1 missed, no progression
+                            }
+                            
+                            // Continue counting subsequent weeks
+                            for (let week = 2; week <= 4; week++) {
+                                const weekEx = plan.weeks[week - 1].days[dayIdx].exercises[exIdx];
+                                const targetReps = exerciseReps[`${exerciseKey}:${week}`] || weekEx.reps;
+                                
+                                // Check if reps hit target this week
+                                let weekOnTarget = false;
+                                for (let s = 1; s <= ex.sets; s++) {
+                                    const setRepsKey = `${exerciseKey}:${week}:${s}`;
+                                    const loggedRep = loggedReps[setRepsKey];
+                                    
+                                    if (loggedRep) {
+                                        const repValue = parseInt(loggedRep.toString().split('-')[1] || loggedRep);
+                                        if (repValue >= targetReps) {
+                                            weekOnTarget = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // If this week hit target, increment count; otherwise stop progression
+                                if (weekOnTarget) {
+                                    consecutiveWeeksHit++;
                                 } else {
-                                    // Stop counting weeks after the first week without reps
-                                    break;
+                                    break; // Stop counting at first miss
                                 }
                             }
                             
-                            // Calculate current week 4 weight based on actual weeks completed
-                            let week4Weight = baseWeight + (increment * (weeksWithReps - 1));
+                            // Week 4 displays: baseWeight + (increment × min(consecutiveWeeksHit, 3))
+                            // (capped at 3 because Week 4 is the 4th week, so max 3 increments above base)
+                            let week4DisplayWeight = baseWeight + (increment * Math.min(consecutiveWeeksHit, 3));
                             
-                            // Check if week 4 reps were logged - if yes, add increment for the new cycle
-                            let week4HasReps = false;
+                            // Check if Week 4 specifically hit its rep target
+                            const week4TargetReps = exerciseReps[`${exerciseKey}:4`] || week4Ex.reps;
+                            let week4OnTarget = false;
                             for (let s = 1; s <= ex.sets; s++) {
                                 const setRepsKey = `${exerciseKey}:4:${s}`;
-                                if (loggedReps[setRepsKey]) {
-                                    week4HasReps = true;
-                                    break;
+                                const loggedRep = loggedReps[setRepsKey];
+                                
+                                if (loggedRep) {
+                                    const repValue = parseInt(loggedRep.toString().split('-')[1] || loggedRep);
+                                    if (repValue >= week4TargetReps) {
+                                        week4OnTarget = true;
+                                        break;
+                                    }
                                 }
                             }
-                            if (week4HasReps) {
-                                week4Weight += increment;
-                            }
                             
-                            // Pre-fill all sets with the calculated weight for new week 1
+                            // Export: use Week 4 displayed weight
+                            // If Week 4 reps were hit, add increment for next cycle
+                            let newWeek1Weight = week4OnTarget ? week4DisplayWeight + increment : week4DisplayWeight;
+                            
+                            // Pre-fill all sets with the new weight for week 1
                             for (let setNum = 1; setNum <= ex.sets; setNum++) {
-                                workoutWeights[`${exerciseKey}:${setNum}`] = week4Weight;
+                                workoutWeights[`${exerciseKey}:${setNum}`] = newWeek1Weight;
                             }
                             
                             // Don't store base weight - let the display logic find it from per-set weights

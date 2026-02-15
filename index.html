@@ -406,7 +406,7 @@
     </style>
 </head>
 <body>
-    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.96</span></div>
+    <div class="app-title" id="app-title">Loadr <span id="app-version">v0.96.1</span></div>
     
     <div class="easter-egg-overlay" id="easter-egg">
         <img src="peter.jpeg" alt="Easter Egg" class="easter-egg-image">
@@ -442,7 +442,7 @@
         <div class="menu-item">
             <button class="menu-button" onclick="resetApp()">Reset App</button>
         </div>
-        <div class="menu-version" id="menu-version">v0.96</div>
+        <div class="menu-version" id="menu-version">v0.96.1</div>
     </div>
     
     <div class="container">
@@ -2159,6 +2159,27 @@
                 }
             }
             
+            // Calculate average reps from all sets in a previous week
+            // Returns the average reps or null if no logged reps available
+            function getAverageRepsForWeek(exerciseKey, weekNum, numSets) {
+                let totalReps = 0;
+                let count = 0;
+                
+                for (let setNum = 1; setNum <= numSets; setNum++) {
+                    const setRepsKey = `${exerciseKey}:${weekNum}:${setNum}`;
+                    const reps = loggedReps[setRepsKey];
+                    if (reps) {
+                        const repsNum = parseInt(reps);
+                        if (!isNaN(repsNum)) {
+                            totalReps += repsNum;
+                            count++;
+                        }
+                    }
+                }
+                
+                return count > 0 ? (totalReps / count).toString() : null;
+            }
+            
             // Calculate plates needed for a given weight
             function calculatePlateDisplay(inputWeight, unit, exerciseName = '', subtractBar = true, barWeight = null) {
                 let number = inputWeight;
@@ -2983,13 +3004,12 @@
                             for (let w = 2; w <= weekNum; w++) {
                                 // Check if previous week's reps were met
                                 if (!isPowerLiftingEx) {
-                                    const prevWeekRepsKey = `${exerciseKey}:${w - 1}:1`;
-                                    const prevWeekActualReps = loggedReps[prevWeekRepsKey];
-                                    if (prevWeekActualReps && meetsRepTarget(prevWeekActualReps, ex.reps)) {
-                                        // Reps were met, increment
+                                    const prevWeekAvgReps = getAverageRepsForWeek(exerciseKey, w - 1, ex.sets);
+                                    if (prevWeekAvgReps && meetsRepTarget(prevWeekAvgReps, ex.reps)) {
+                                        // Reps were met on average, increment
                                         calculatedWeight += increment;
                                     }
-                                    // else: reps not met, don't increment (stay at same weight)
+                                    // else: reps not met on average, don't increment (stay at same weight)
                                 } else {
                                     // For powerlifting exercises using increment logic (no 1RM), always increment
                                     calculatedWeight += increment;
@@ -3457,8 +3477,48 @@
                     }
                 }
                 
+                // Save unsaved input values before rebuilding
+                const unsavedInputs = {};
+                for (let s = 1; s <= ex.sets; s++) {
+                    const weightInputId = `weight-input-${weekNum}-${dayIdx}-${exIdx}-${s}`;
+                    const repsInputId = `reps-input-${weekNum}-${dayIdx}-${exIdx}-${s}`;
+                    
+                    const weightInput = document.getElementById(weightInputId);
+                    const repsInput = document.getElementById(repsInputId);
+                    
+                    // Save weight inputs (only week 1 has them)
+                    if (weekNum === 1 && weightInput) {
+                        unsavedInputs[`w${s}`] = weightInput.value;
+                    }
+                    // Save reps inputs (all weeks have them)
+                    if (repsInput) {
+                        unsavedInputs[`r${s}`] = repsInput.value;
+                    }
+                }
+                
                 // Rebuild the panel
                 showExercise(null, key, weekNum, dayIdx, exIdx, true);
+                
+                // Restore unsaved input values after rebuild
+                // Use setTimeout to ensure the rebuild is complete before we try to find the new elements
+                setTimeout(() => {
+                    for (let s = 1; s <= ex.sets; s++) {
+                        // Restore weight inputs (only week 1)
+                        if (weekNum === 1 && unsavedInputs[`w${s}`] !== undefined) {
+                            const weightInput = document.getElementById(`weight-input-${weekNum}-${dayIdx}-${exIdx}-${s}`);
+                            if (weightInput) {
+                                weightInput.value = unsavedInputs[`w${s}`];
+                            }
+                        }
+                        // Restore reps inputs
+                        if (unsavedInputs[`r${s}`] !== undefined) {
+                            const repsInput = document.getElementById(`reps-input-${weekNum}-${dayIdx}-${exIdx}-${s}`);
+                            if (repsInput) {
+                                repsInput.value = unsavedInputs[`r${s}`];
+                            }
+                        }
+                    }
+                }, 0);
             }
 
 
